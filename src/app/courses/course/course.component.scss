@@ -1,12 +1,13 @@
 @use 'colors' as colors;
 @use 'constants' as constants;
 
+
 .course-card {
   background: colors.$color-background-card;
   border-radius: 8px;
   border: 1px solid colors.$color-border-primary;
   flex-grow: 1;
-  max-width: 300px;
+  // max-width: 300px;
   overflow: hidden;
   transition: all 0.2s ease;
   cursor: pointer;

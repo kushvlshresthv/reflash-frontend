@@ -1,4 +1,3 @@
-
 <div class="available-screen" (click)="closeMenuOptionsIfOpen()">
   @if (showMenuOptions) {
     <div
@@ -15,15 +14,14 @@
   @if (coursesLoaded) {
     <div class="heading">Courses</div>
 
-    <div class="courses">
-      @for (course of courses; track course.id) {
-        <app-course
-          [course]="course"
-          (toggleMenu)="onMenuOptionClick($event)"
-        ></app-course>
-      }
+    <div class="wrapper">
+      <div class="courses">
+        @for (course of courses; track course.id) {
+          <app-course [course]="course" (toggleMenu)="onMenuOptionClick($event)"></app-course>
+        }
+      </div>
     </div>
-    } @else {
-	<span class="loader"></span>
-    }
+  } @else {
+    <span class="loader"></span>
+  }
 </div>

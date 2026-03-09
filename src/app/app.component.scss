@@ -1,6 +1,5 @@
-@use "constants" as constants;
-@use "colors" as colors;
-
+@use 'constants' as constants;
+@use 'colors' as colors;
 
 .screen-with-sidebars {
   margin-top: constants.$header-height;
@@ -10,11 +9,11 @@
 }
 
 app-left-sidebar {
-    border-right: 1px solid colors.$color-border-primary;
+  border-right: 1px solid colors.$color-border-primary;
 }
 
 app-right-sidebar {
-    border-left: 1px solid colors.$color-border-primary;
+  border-left: 1px solid colors.$color-border-primary;
 }
 
 .main-screen {
@@ -24,16 +23,25 @@ app-right-sidebar {
   // border: 2px solid red;
 }
 
-
 //if login, hide the sidebars
-app-left-sidebar.login-page, app-right-sidebar.login-page {
-    display: none;
-    border: 1px solid red;
+app-left-sidebar.login-page,
+app-right-sidebar.login-page {
+  display: none;
+  border: 1px solid red;
 }
 
 .main-screen.login-page {
-    margin-left: 0;
-    margin-right: 0;
+  margin-left: 0;
+  margin-right: 0;
 }
 
+@media (max-width: 768px) {
+    app-right-sidebar {
+        display: none;
+    }
 
+    .main-screen {
+        margin-right: 0;
+        margin-left: 0;
+    }
+}

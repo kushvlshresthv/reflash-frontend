@@ -1,44 +1,43 @@
-@use "constants" as constants;
-@use "colors" as colors;
+@use 'constants' as constants;
+@use 'colors' as colors;
 
 .available-screen {
-    width: 100%;
-    height: 100%;
+  width: 100%;
+  height: 100%;
+}
+
+.wrapper {
+  display: flex;
+  justify-content: center;
 }
 
 .available-screen:has(.loader) {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
-
 
 .heading {
   margin-bottom: 20px;
   font-size: constants.$font-xxl;
   font-weight: constants.$font-weight-semibold;
-
 }
 
 .courses {
+  flex-grow: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, max-content));  //max-content prevents the cards to grow beyond its natural size
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(270px, max-content)
+  ); //max-content prevents the cards to grow beyond its natural size
+
+  // grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+
   justify-content: start;
   gap: 20px;
   scrollbar-gutter: stable;
   margin-right: 20px;
-}
-
-@media (max-width: 768px) {
-  .member-summaries {
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(150px, 1fr)
-    ); //150px because it is the minimum to get 2 cards when mobile screen
-
-    margin-right: 0;
-  }
 }
 
 .menu-options {
@@ -72,5 +71,13 @@
 
   .menu-option:hover {
     color: white;
+  }
+}
+
+@media (max-width: 768px) {
+  .courses {
+    // flex-grow: 1;
+    justify-content: center;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
   }
 }
