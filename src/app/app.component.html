@@ -1,0 +1,9 @@
+<app-header></app-header>
+<div class="screen-with-sidebars">
+    <app-left-sidebar [class.login-page]="!isLoggedIn"></app-left-sidebar>
+    <div class="main-screen" [class.login-page]="!isLoggedIn">
+	<router-outlet />
+    </div>
+    <app-right-sidebar [class.login-page]="!isLoggedIn"></app-right-sidebar>
+</div>
+<app-popup></app-popup>

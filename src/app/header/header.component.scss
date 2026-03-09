@@ -1,0 +1,104 @@
+@use "colors" as colors;
+@use "constants" as constants;
+:host {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid colors.$color-border-primary;
+  width: 100vw;
+
+  //fixed header
+  position: fixed;
+  top: 0; // distance from top of viewport
+  right: 0; // distance from right of viewport
+  height: constants.$header-height;
+
+  background: colors.$color-background-primary;
+  z-index: 9999; // make sure it's above everything *
+
+  box-sizing: border-box;
+  padding: 2px 22px 0 18px;
+}
+
+a {
+    text-decoration: none;
+    color: colors.$color-font-primary;
+}
+
+.logo {
+  font-size: 2.5rem;
+  padding: 15px 0;
+  font-family: Revalia, sans-serif;
+  line-height: 0; //this particular font has a big line height for some reason
+  margin-bottom: 25px;
+  padding-left: 30px; 
+}
+
+.btn {
+    border: none;
+    background: none;
+    color: colors.$color-font-primary;
+    height: 30px;
+    line-height: 30px;
+}
+
+svg {
+    height: 25px;
+    width: 25px;
+    position: relative;
+}
+
+.create-options {
+    position: absolute;
+    cursor: pointer;
+    right: 0;
+    top: 55px;
+    flex-direction: column;
+    background-color: colors.$color-background-secondary;
+    display: none;
+    padding: 10px 20px;
+    gap: 20px;
+    border-radius: 12px;
+    font-size: constants.$font-normal;
+}
+
+.option:hover {
+    color: white;
+}
+
+.create-options.show {
+    display: flex;
+}
+
+.svg-icon {
+    cursor: pointer;
+}
+
+.svg-icon:hover svg path, .show svg path  {
+    fill: colors.$color-border-focus;
+}
+
+.create-options > *:not(:last-child) {
+    // border-bottom: 1px solid colors.$color-border-primary;
+}
+
+
+
+
+
+////////////////////////////////////////////////////
+// MOBILE RESPONSIVE STYLES
+
+@media (max-width: 768px) {
+  :host {
+    padding-right: 16px;
+    padding-left: 16px;
+    height: 56px;
+  }
+
+  .logo {
+    font-size: 1.8rem;
+    padding: 10px 0;
+    margin-bottom: 18px;
+  }
+}

@@ -1,0 +1,173 @@
+<dialog
+  class="main-dialog"
+  [class.expanded]="showAdvancedSettings"
+  #create_habit_dialog
+  appSafeCloseDialog
+  [customSaveForm]="saveFormData"
+  [customRestoreForm]="restoreFormData"
+>
+  <div class="habit-details-panel">
+    <div class="panel-header">
+      <h2>HABIT</h2>
+      <button class="save-btn" (click)="onFormSave($event)">Save</button>
+    </div>
+
+    <form [formGroup]="habitFormGroup" class="actual-form">
+      <!-- Habit Name -->
+      <div class="form-group">
+        <label for="control-habit-name">Habit Name<span class="required-astrick">*</span></label>
+        <input
+          id="control-habit-name"
+          type="text"
+          formControlName="habitName"
+          class="form-input"
+          placeholder="Enter habit name"
+          [class.error]="habitName.touched && habitName.dirty && habitName.invalid"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        @if ((habitName.touched && habitName.dirty) || showAllErrors) { @if
+        (habitName.errors?.['required']) {
+        <p class="field-error">Habit name is required</p>
+        } @else if (habitName.errors?.['minlength']) {
+        <p class="field-error">Habit name should be at least 2 characters long</p>
+        } @else if (habitName.errors?.['maxlength']) {
+        <p class="field-error">Habit name should be under 100 characters</p>
+        } }
+      </div>
+
+      <!-- Start Date and End Date -->
+      <div class="form-row">
+        <div class="form-group half-width">
+          <label for="control-start-date">Start Date<span class="required-astrick">*</span></label>
+          <input
+            id="control-start-date"
+            type="date"
+            formControlName="startDate"
+            class="form-input"
+            [class.error]="startDate.touched && startDate.dirty && startDate.invalid"
+          />
+          @if ((startDate.touched && startDate.dirty) || showAllErrors) { @if
+          (startDate.errors?.['required']) {
+          <p class="field-error">Start date is required</p>
+          } }
+        </div>
+
+        <div class="form-group half-width">
+          <label for="control-end-date">End Date<span class="required-astrick">*</span></label>
+          <input
+            id="control-end-date"
+            type="date"
+            formControlName="endDate"
+            class="form-input"
+            [class.error]="endDate.touched && endDate.dirty && endDate.invalid"
+          />
+          @if ((endDate.touched && endDate.dirty) || showAllErrors) { @if
+          (endDate.errors?.['required']) {
+          <p class="field-error">End date is required</p>
+          } }
+        </div>
+      </div>
+
+      <div class="form-row">
+        <!-- Cheat Days -->
+        <div class="form-group half-width">
+          <label for="control-cheat-days"
+            >Number of Cheat Days<span class="required-astrick">*</span></label
+          >
+          <input
+            id="control-cheat-days"
+            type="number"
+            formControlName="cheatDays"
+            class="form-input"
+            placeholder="0"
+            min="0"
+            [class.error]="cheatDays.touched && cheatDays.dirty && cheatDays.invalid"
+          />
+          @if ((cheatDays.touched && cheatDays.dirty) || showAllErrors) { @if
+          (cheatDays.errors?.['required']) {
+          <p class="field-error">Number of cheat days is required</p>
+          } @else if (cheatDays.errors?.['min']) {
+          <p class="field-error">Cheat days cannot be negative</p>
+          } }
+        </div>
+
+        <!-- Habit Duration (Default) -->
+        <div class="form-group half-width">
+          <label for="control-habit-duration"
+            >Habit Duration (minutes)<span class="required-astrick">*</span></label
+          >
+          <input
+            id="control-habit-duration"
+            type="number"
+            formControlName="habitDuration"
+            class="form-input"
+            placeholder="60"
+            min="1"
+            [class.error]="habitDuration.touched && habitDuration.dirty && habitDuration.invalid"
+          />
+          @if ((habitDuration.touched && habitDuration.dirty) || showAllErrors) { @if
+          (habitDuration.errors?.['required']) {
+          <p class="field-error">Habit duration is required</p>
+          } @else if (habitDuration.errors?.['min']) {
+          <p class="field-error">Duration must be at least 1 minute</p>
+          } }
+        </div>
+      </div>
+
+      <!-- Habit Frequency -->
+      <div class="form-group">
+        <label>Habit Frequency<span class="required-astrick">*</span></label>
+        <div class="days-selector">
+          @for (day of daysOfWeek; track day.id) {
+          <button
+            type="button"
+            class="day-button"
+            [class.selected]="day.selected"
+            (click)="toggleDay(day.id)"
+            [title]="day.name"
+          >
+            {{ day.label }}
+          </button>
+          }
+        </div>
+      </div>
+
+      <!-- Advanced Settings Checkbox -->
+      <div class="form-group with-checkbox">
+        <input
+          type="checkbox"
+          class="check-box"
+          [checked]="showAdvancedSettings"
+          (change)="toggleAdvancedSettings($event)"
+        />
+        <label class="checkbox-container">
+          <span class="checkbox-label">Use Advanced Settings</span>
+        </label>
+      </div>
+    </form>
+  </div>
+
+  <!-- Advanced Settings Panel -->
+  @if (showAdvancedSettings) {
+  <div class="advanced-settings-panel">
+    <div class="advanced-settings">
+      <p class="settings-description">Set Custom Duration:</p>
+      @for (day of daysOfWeek; track day.id) { @if (day.selected) {
+      <div class="day-duration-row">
+        <label class="day-label">{{ day.name }}</label>
+        <input
+          type="number"
+          class="form-input duration-input"
+          [value]="day.duration"
+          (input)="updateDayDuration(day.id, $any($event.target).value)"
+          min="1"
+          placeholder="Duration in minutes"
+        />
+        <span class="unit-label">minutes</span>
+      </div>
+      } }
+    </div>
+  </div>
+  }
+</dialog>

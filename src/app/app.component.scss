@@ -1,0 +1,39 @@
+@use "constants" as constants;
+@use "colors" as colors;
+
+
+.screen-with-sidebars {
+  margin-top: constants.$header-height;
+  height: calc(100vh - constants.$header-height);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+app-left-sidebar {
+    border-right: 1px solid colors.$color-border-primary;
+}
+
+app-right-sidebar {
+    border-left: 1px solid colors.$color-border-primary;
+}
+
+.main-screen {
+  margin-left: constants.$left-sidebar-width;
+  margin-right: constants.$right-sidebar-width;
+  padding: 20px;
+  // border: 2px solid red;
+}
+
+
+//if login, hide the sidebars
+app-left-sidebar.login-page, app-right-sidebar.login-page {
+    display: none;
+    border: 1px solid red;
+}
+
+.main-screen.login-page {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+

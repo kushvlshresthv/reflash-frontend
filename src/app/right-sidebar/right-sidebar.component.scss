@@ -1,0 +1,11 @@
+@use "constants" as constants;
+:host {
+  position: fixed;
+  top: constants.$header-height; // distance from top of viewport
+  right: 0; // distance from left of viewport
+  width: constants.$right-sidebar-width;
+  z-index: 9998; // make sure it's above everything but below the header
+  min-height: 100vh;
+  margin-right: 7px;  //to accomodate the right side scrollbar from main-screen
+}
+

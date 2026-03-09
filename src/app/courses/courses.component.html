@@ -1,0 +1,29 @@
+
+<div class="available-screen" (click)="closeMenuOptionsIfOpen()">
+  @if (showMenuOptions) {
+    <div
+      class="menu-options"
+      [class.hidden]="!showMenuOptions"
+      [style.top.px]="dropdownTop"
+      [style.right.px]="dropdownRight"
+    >
+      <div class="menu-option" (click)="onEditOptionClick($event)">Option</div>
+      <div class="menu-option">Option</div>
+    </div>
+  }
+
+  @if (coursesLoaded) {
+    <div class="heading">Courses</div>
+
+    <div class="courses">
+      @for (course of courses; track course.id) {
+        <app-course
+          [course]="course"
+          (toggleMenu)="onMenuOptionClick($event)"
+        ></app-course>
+      }
+    </div>
+    } @else {
+	<span class="loader"></span>
+    }
+</div>

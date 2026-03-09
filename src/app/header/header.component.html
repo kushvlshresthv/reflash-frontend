@@ -1,0 +1,22 @@
+<a class="logo-link" routerLink="/home"> <div class="logo">reFlash</div></a>
+<!-- <div class="btn create">Create</div> -->
+<div class="svg-icon" (click)="onCreateSvgClick()" [class.show]="showCreateOptions">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#c1c2c2">
+    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+    <g id="SVGRepo_iconCarrier">
+      <rect x="0" fill="none" width="24" height="24"></rect>
+      <g>
+        <path
+          d="M21 14v5c0 1.105-.895 2-2 2H5c-1.105 0-2-.895-2-2V5c0-1.105.895-2 2-2h5v2H5v14h14v-5h2z"
+        ></path>
+        <path d="M21 7h-4V3h-2v4h-4v2h4v4h2V9h4"></path>
+      </g>
+    </g>
+  </svg>
+
+  <div class="create-options" [class.show]="showCreateOptions">
+    <div class="option habit" routerLink="/create-todo">Create New Todo</div>
+    <div class="option todo" routerLink="/create-habit">Create New Habit</div>
+  </div>
+</div>

@@ -1,0 +1,360 @@
+@use 'colors' as colors;
+@use 'constants' as constants;
+
+.main-dialog {
+  width: 600px;
+  background: colors.$color-background-card;
+  border: 1px solid colors.$color-border-primary;
+  padding: 0px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  border-radius: 5px;
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &.expanded {
+    width: 900px;
+    max-width: 90vw;
+
+    &[open] {
+      flex-direction: row;
+    }
+  }
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+  }
+}
+
+.habit-details-panel {
+  width: 100%;
+  background: colors.$color-background-card;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  .expanded & {
+    width: 600px;
+    flex-shrink: 0;
+  }
+}
+
+.actual-form {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 0;
+  min-height: 0vh;
+  max-height: 60vh;
+  padding: 20px;
+  gap: 24px;
+  padding-bottom: 30px;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: colors.$color-background-card;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: colors.$color-border-primary;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: colors.$color-background-input;
+  }
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &.half-width {
+    flex: 1;
+  }
+}
+
+.field-error {
+  color: colors.$color-font-error;
+  font-size: constants.$font-medium;
+  font-weight: constants.$font-weight-medium;
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+.required-astrick {
+  color: colors.$color-font-error;
+  padding-left: 4px;
+  font-size: 0.9rem;
+  display: inline-block;
+  padding-bottom: 5px;
+}
+
+form label,
+.data-label {
+  font-size: constants.$font-small;
+  font-weight: constants.$font-weight-medium;
+  color: colors.$color-font-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input {
+  padding: 12px 20px;
+  background: colors.$color-background-input;
+  border: 1px solid colors.$color-border-primary;
+  border-radius: 6px;
+  color: colors.$color-font-primary;
+  font-size: constants.$font-normal;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  font-size: constants.$font-large;
+  width: 100%;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: colors.$color-font-muted;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: colors.$color-border-focus;
+    background: colors.$color-background-input-hover;
+    // box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.1);
+  }
+
+  &:hover:not(:focus) {
+    border-color: colors.$color-background-input;
+    background: colors.$color-background-input-hover;
+  }
+
+  &.error {
+    border-color: colors.$color-font-error;
+  }
+}
+
+.form-input[type='date'],
+.form-input[type='number'] {
+  color-scheme: dark;
+}
+
+.form-input[type='date']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.panel-header {
+  display: flex;
+  flex-direction: row;
+  padding: 10px 20px;
+  border-bottom: 1px solid colors.$color-border-primary;
+  background: colors.$color-background-input;
+  justify-content: space-between;
+  align-items: center;
+  height: 50px;
+
+  h2 {
+    font-size: constants.$font-xl;
+    font-weight: constants.$font-weight-semibold;
+    color: colors.$color-font-primary;
+    margin: 0 0 4px 0;
+    line-height: 1.5;
+  }
+
+  .save-btn {
+    width: fit-content;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 3px;
+    font-size: constants.$font-normal;
+    font-weight: constants.$font-weight-semibold;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    color: white;
+    background: colors.$color-button-primary;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &:not(:disabled):hover {
+      transform: translateY(-1px);
+      background: colors.$color-button-primary-hover;
+    }
+
+    &:not(:disabled):active {
+      transform: translateY(0);
+      background: colors.$color-button-primary-active;
+    }
+
+    &:disabled {
+      background: colors.$color-button-primary-active;
+      color: colors.$color-button-disabled-font;
+    }
+  }
+}
+
+// Days Selector Styles
+.days-selector {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.day-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid colors.$color-border-primary;
+  background: colors.$color-background-input;
+  color: colors.$color-font-secondary;
+  font-size: constants.$font-normal;
+  font-weight: constants.$font-weight-semibold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    border-color: colors.$color-border-focus;
+    background: colors.$color-background-input-hover;
+  }
+
+  &.selected {
+    // background: colors.$color-button-primary;
+    border-color: colors.$color-button-primary;
+    color: white;
+
+    &:hover {
+      background: colors.$color-button-primary-hover;
+      border-color: colors.$color-button-primary-hover;
+    }
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.form-group.with-checkbox {
+  flex-direction: row;
+}
+
+.check-box {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: colors.$color-button-primary;
+  // background-color: colors.$color-background-input;
+  background-color: grey;
+  border: 1px solid colors.$color-border-primary;
+  border-radius: 3px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative;
+
+  &:checked {
+    background-color: colors.$color-button-primary;
+    border-color: colors.$color-button-primary;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 2px;
+      width: 4px;
+      height: 8px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+  }
+}
+
+// Checkbox Container
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px 0;
+
+  .checkbox-label {
+    font-size: constants.$font-normal;
+    color: colors.$color-font-primary;
+    font-weight: constants.$font-weight-medium;
+    text-transform: none;
+    letter-spacing: normal;
+    cursor: pointer;
+  }
+}
+
+// Advanced Settings Panel (Horizontal)
+.advanced-settings-panel {
+  width: 300px;
+  flex-shrink: 0;
+  background: colors.$color-background-input;
+  border-left: 1px solid colors.$color-border-primary;
+  overflow: auto;
+}
+
+// Advanced Settings Section
+.advanced-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.settings-description {
+  margin: 0;
+  font-size: constants.$font-small;
+  color: colors.$color-font-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: constants.$font-weight-medium;
+}
+
+.day-duration-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .day-label {
+    min-width: 100px;
+    font-size: constants.$font-normal;
+    color: colors.$color-font-primary;
+    font-weight: constants.$font-weight-medium;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .duration-input {
+    flex: 1;
+    max-width: 200px;
+  }
+
+  .unit-label {
+    font-size: constants.$font-small;
+    color: colors.$color-font-muted;
+    min-width: 60px;
+  }
+}

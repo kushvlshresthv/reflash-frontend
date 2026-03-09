@@ -1,0 +1,75 @@
+@use "colors" as colors;
+@use "constants" as constants;
+@use "reset";
+
+
+html,
+body  {
+  font-family: Roboto, sans-serif !important;
+  font-weight: 400;
+  color: colors.$color-font-primary;
+
+  background-color: colors.$color-background-primary;
+  overflow: hidden;
+}
+
+button {
+    font-family: Roboto, sans-serif !important;
+}
+
+/* Global scrollbar styling */
+* {
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: colors.$color-background-card;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: colors.$color-border-primary;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: colors.$color-background-input;
+  }
+}
+
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-block;
+  border-top: 3px solid #FFF;
+  border-right: 3px solid transparent;
+  box-sizing: border-box;
+
+  /* Start completely invisible */
+  opacity: 0;
+
+  /* Chain two animations:
+      - 'rotation': runs immediately and forever (your original animation)
+      - 'fadeIn': waits 0.4s, then runs once to make opacity 1 */
+  animation: 
+    rotation 1s linear infinite, 
+    fadeIn 0.5s ease-in 0.4s forwards; 
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Define the fade-in animation */
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
