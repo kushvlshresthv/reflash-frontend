@@ -4,8 +4,7 @@ export interface Popup {
   displayTime: number;
 }
 
-
-//for scheduler: 
+//for scheduler:
 
 export interface Deck {
   id: number;
@@ -37,6 +36,11 @@ export interface Note {
 }
 
 export interface CourseStudent {
+  id: number;
+  name: string;
+}
+
+export interface DeckStudent {
   id: number;
   name: string;
 }

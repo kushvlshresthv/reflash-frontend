@@ -1,13 +1,14 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './login/login.component';
 import { HomeComponent } from './home/home.component';
+import { DecksComponent } from './decks/decks.component';
 import { isNotAuthenticated } from './app.guards';
 
 export const routes: Routes = [
   {
     path: '',
     redirectTo: 'home',
-    pathMatch: 'full' ,
+    pathMatch: 'full',
   },
   {
     path: 'login',
@@ -17,5 +18,9 @@ export const routes: Routes = [
   {
     path: 'home',
     component: HomeComponent,
+  },
+  {
+    path: 'course/decks',
+    component: DecksComponent,
   },
 ];

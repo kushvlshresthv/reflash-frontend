@@ -1,17 +1,14 @@
 @use 'colors' as colors;
 @use 'constants' as constants;
 
-
-.course-card {
+.deck-card {
   background: colors.$color-background-card;
   border-radius: 8px;
   border: 1px solid colors.$color-border-primary;
   flex-grow: 1;
-  // max-width: 300px;
   overflow: hidden;
   transition: all 0.2s ease;
   cursor: pointer;
-
 
   &:hover {
     background: colors.$color-card-hover;
@@ -29,6 +26,7 @@
   justify-content: space-between;
   width: 100%;
   box-sizing: border-box;
+  height: 60px;
 }
 
 .header-content {
@@ -36,20 +34,17 @@
   min-width: 0;
 }
 
-.meeting-title {
+.deck-name {
   margin: 0;
   font-size: constants.$font-large;
   font-weight: constants.$font-weight-semibold;
   color: colors.$color-font-primary;
-
-  // Truncate to 2 lines with ellipsis
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis; //displays ... if overflow
-
+  text-overflow: ellipsis;
   line-height: 1.6;
   min-height: calc(1rem * 1.6 * 2);
 }
@@ -86,6 +81,7 @@
 
 .menu-btn-container {
   padding-bottom: 4px;
+
   .menu-btn {
     cursor: pointer;
     background: colors.$color-background-primary;

@@ -1,0 +1,27 @@
+<div class="available-screen" (click)="closeMenuOptionsIfOpen()">
+  @if (showMenuOptions) {
+    <div
+      class="menu-options"
+      [class.hidden]="!showMenuOptions"
+      [style.top.px]="dropdownTop"
+      [style.right.px]="dropdownRight"
+    >
+      <div class="menu-option">Option</div>
+      <div class="menu-option">Option</div>
+    </div>
+  }
+
+  @if (decksLoaded) {
+    <div class="heading">Decks</div>
+
+    <div class="wrapper">
+      <div class="decks">
+        @for (deck of decks; track deck.id) {
+          <app-deck [deck]="deck" (toggleMenu)="onMenuOptionClick($event)"></app-deck>
+        }
+      </div>
+    </div>
+  } @else {
+    <span class="loader"></span>
+  }
+</div>

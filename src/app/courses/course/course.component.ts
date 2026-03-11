@@ -1,11 +1,11 @@
 import { Component, input, output } from '@angular/core';
 import { CourseStudent } from '../../models/models';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-course',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './course.component.html',
   styleUrl: './course.component.scss',
 })
@@ -21,5 +21,4 @@ export class CourseComponent {
   toggleMenuEvent(eventObj: Event) {
     this.toggleMenu.emit({event: eventObj, id: this.course().id});
   }
-
 }

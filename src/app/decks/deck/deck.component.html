@@ -1,15 +1,12 @@
-<div
-  class="course-card"
-  routerLink="/course/decks"
-  [queryParams]="{ courseId: course().id }">
+<div class="deck-card">
   <div class="card-header">
     <div class="header-content">
-      <h3 class="course-name">
-        {{ course().name }}
+      <h3 class="deck-name">
+        {{ deck().name }}
       </h3>
     </div>
     <div class="menu-btn-container">
-	    <button class="menu-btn" (click)="toggleMenuEvent($event)">⋯</button>
+      <button class="menu-btn" (click)="toggleMenuEvent($event)">⋯</button>
     </div>
   </div>
 
@@ -17,7 +14,7 @@
     <div class="info-grid">
       <div class="info-item">
         <span class="label">ID</span>
-        <span class="value">{{ course().id }}</span>
+        <span class="value">{{ deck().id }}</span>
       </div>
     </div>
   </div>
