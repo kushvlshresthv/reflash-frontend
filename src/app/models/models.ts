@@ -14,6 +14,7 @@ export interface Deck {
   courseName: string;
   deckName: string;
   flashcards: Flashcard[];
+  crt: number;
 }
 
 
