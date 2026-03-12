@@ -87,6 +87,11 @@ class Scheduler {
   //Queue of review cards(queue = REVIEW) that are due today, shuffled
   private revQueue: Flashcard[] = [];
 
+
+  //Collection of dirty cards that need to be submitted to the server
+  private dirtyCards: Flashcard[] = [];
+
+
   //Determines how often a new card is inserted between review and learning cards
   private newCardModulus = 0;
 
@@ -462,6 +467,289 @@ class Scheduler {
     if (this.fillRev()) return this.revQueue.pop() || null;
     return null;
   }
+
+
+
+// =====================================================================
+//  ANSWER CARD — public API
+// =====================================================================
+
+/**
+ * Updates the given card after the user has answered.
+ *
+ * This is the second core method of the scheduler (alongside getCard).
+ * It dispatches to a specialised handler based on the card's current queue:
+ *
+ *   queue == NEW      → answerNewCard(card, ease)
+ *   queue == LEARNING → answerLrnCard(card, ease)
+ *   queue == REVIEW   → answerRevCard(card, ease)
+ *
+ * Before dispatching, the card's `reps` counter is incremented in the FlashCard object (not the scheduler which also has a reps counter)
+ * (total number of times this card has ever been reviewed).
+ *
+ * @param card the card that was reviewed.
+ * @param ease the user's answer (1-based):
+ *             1 = Again, 2 = Hard, 3 = Good, 4 = Easy.
+ * @throws Error if ease is not in [1, 4] or the card's queue is unexpected.
+ */
+// NOTE: this should be implemented in the frontend and then update time should be sent to the backend
+public answerCard(card: Flashcard, ease: number): void {
+    // Validate inputs — same assertions as Anki:
+    //   assert 1 <= ease <= 4
+    if (ease < 1 || ease > 4) {
+        throw new Error(`ease must be between 1 and 4, got: ${ease}`);
+    }
+
+    // Increment the card's total review count.
+    card.reps = card.reps + 1;
+
+    // Dispatch based on the card's current queue.
+    switch (card.queue) {
+      case "NEW":
+            // Brand-new card being seen for the first time.
+            this.answerNewCard(card, ease);
+            break;
+
+      case "LEARNING":
+            // Card is in the learning (or relearning) queue.
+            this.answerLrnCard(card, ease);
+            break;
+
+        case "REVIEW"
+            // Card is in the review queue.
+            this.answerRevCard(card, ease);
+            break;
+
+        default:
+            throw new Error(`Unexpected card queue: ${card.queue}`);
+    }
+    this.markCardDirty(card);
+}
+
+// =====================================================================
+//  ANSWERING NEW CARDS
+// =====================================================================
+
+/**
+ * Handles answering a card that is currently in the NEW queue.
+ *
+ * What happens:
+ *   1. Move the card from the NEW queue to the LEARNING queue.
+ *   2. Set the card type to LEARNING.
+ *   3. Initialise the `left` field which encodes how many
+ *      learning steps remain (both for today and until graduation).
+ *
+ * After this method, the card is in the learning pipeline and will
+ * be handled by answerLrnCard on subsequent reviews.
+ *
+ * @param card the new card being answered.
+ * @param ease the user's answer (1–4). Not used for new cards because
+ *             the card always moves to LEARNING regardless of ease.
+ */
+
+
+private answerNewCard(card: Flashcard, ease: number): void {
+    // Move from the NEW queue → LEARNING queue.
+    card.queue = "LEARNING";
+    card.type = "LEARNING";
+  
+    // Initialise the learning-steps counter.
+    // This tells the scheduler how many steps are left before
+    // the card graduates to the REVIEW queue.
+    // NOTE: this sets the left to the first step of the learning steps
+    card.left = this.startingLeft(card);
+
+    // NOTE: after initializations, answer like a learning card i.e. if 'easy' was clicked, graduate the card and stuffs
+    this.answerLrnCard(card, ease);
+}
+
+  private markCardDirty(card: Flashcard) {
+    card.dirty = true;
+    this.dirtyCards.push(card);
+  }
+
+
+
+
+
+
+
+// =====================================================================
+//  LEARNING-STEP HELPERS
+// =====================================================================
+
+/**
+ * Returns the learning-step delays for the given card.
+ *
+ * If the card is (re-)learning after a lapse (type == REVIEW or
+ * type == RELEARNING) it uses LAPSE_STEPS.
+ * Otherwise it uses NEW_STEPS.
+ *
+ * @param card the card.
+ * @return the array of step delays in minutes.
+ */
+  private lrnConf(card: Flashcard): number[] {
+      // If the card was previously a review card (lapse), use lapse steps.
+      // Otherwise use new-card steps.
+      if (card.type === "REVIEW" || card.type === "RELEARNING") {
+          return Scheduler.LAPSE_STEPS;
+      }
+      return Scheduler.NEW_STEPS;
+  }
+
+/**
+ * Computes the initial value of the `left` field for a card
+ * that is entering the learning queue.
+ *
+ * @param card the card entering the learning queue.
+ * @return left value.
+ */
+private startingLeft(card: Flashcard): number {
+    const delays = this.lrnConf(card);
+    const total = delays.length;
+  return  total;
+}
+
+  
+
+
+// =====================================================================
+//  ANSWERING LEARNING CARDS
+// =====================================================================
+
+/**
+ * Handles answering a card that is currently in the LEARNING queue.
+ *
+ * Dispatches to one of four actions based on the ease button:
+ *
+ *   ease 4 (Easy)  → immediately graduate to review queue.
+ *   ease 3 (Good)  → advance to the next step; if no steps remain,
+ *                     graduate to review.
+ *   ease 2 (Hard)  → repeat the current step (same delay again).
+ *   ease 1 (Again) → go back to the first step.
+ *
+ * @param card the learning card being answered.
+ * @param ease 1=Again, 2=Hard, 3=Good, 4=Easy.
+ */
+// NOTE: when a learning card is answered:
+private answerLrnCard(card: Flashcard, ease: number): void {
+    const conf = this.lrnConf(card);
+
+    if (ease === 4) {
+        // "Easy" — skip remaining steps and graduate immediately.
+        this.rescheduleAsRev(card, conf, true);
+
+    } else if (ease === 3) {
+        // "Good" — check if the card has finished all its steps.
+        // card.left % 1000 gives the total steps remaining.
+        // If only 1 (or 0) step remains, the card graduates.
+      const stepsLeft = card.left; 
+        if (stepsLeft - 1 <= 0) {
+            // No more steps → graduate to review.
+            this.rescheduleAsRev(card, conf, false);
+        } else {
+            // More steps remain → move to the next one.
+            this.moveToNextStep(card, conf);
+        }
+
+    } else if (ease === 2) {
+        // "Hard" — repeat the current step with the same delay.
+        // NOTE: The current card step is repeated. This means the attribute `left` is unchanged. We still have the same number of steps before graduation.
+        // NOTE: The difference is that the card will be scheduled in a delay slightly longer than the previous one. We average the last and next delays [Ex: 1m 10m 20m and we are at step 2 => repeat in 15m)
+        this.repeatStep(card, conf);
+
+    } else {
+        // ease === 1, "Again" — back to the very first step.
+
+        // NOTE: We restore the attribute 'left' as if the card were new
+        // NOTE: We process lapses differently (the RELEARNING cards probably). By default we reset the attribute ivl to 1 (next review in one day) (ivl is only applicable for review cards, no?)
+        // NOTE: The card due date is determined by adding the next step to the current date. The card remains in the learning queue (1). (Since the left was set as if the card were new, we are back to the first step.)
+        // NOTE: The delayForGrade() is a helper method to get the next step (to calculate the due date). This method extracts the number of remaining steps from the attribute 'left' (Ex: 1002 => 2 remaining steps) and uses the setting delay to find the matching delay (Ex: 1m 10m 1d => next study in 10m)
+        this.moveToFirstStep(card, conf);
+    }
+}
+
+
+
+// ── Again (ease 1) ────────────────────────────────────────────────────
+
+/**
+ * Moves the card back to the first learning step.
+ *
+ * @param card the card to reset.
+ * @param conf the step delays array (minutes).
+ */
+private moveToFirstStep(card: FlashCard, conf: number[]): void {
+    // Reset the steps counter as if the card is freshly entering learning.
+    card.left = this.startingLeft(card);
+
+    // If this is a relearning card (a review card that lapsed),
+    // reduce its review interval to reflect the failure.
+    if (card.type === "RELEARNING") {
+        this.updateRevIvlOnFail(card);
+    }
+
+    // Schedule the card for the first step's delay.
+    this.rescheduleLrnCard(card, conf, null);
+}
+
+/**
+ * After a lapse ("Again" on a relearning card), reduce the card's
+ * review interval.
+ *
+ * @param card the lapsed card.
+ */
+private updateRevIvlOnFail(card: Flashcard): void {
+    card.ivl = this.lapseIvl(card);
+}
+
+/**
+ * Computes the new interval for a card after a lapse.
+ *
+ * Formula:  max(1, minInt, ivl × mult)
+ *
+ * With the default settings (mult=0, minInt=1) this always returns 1,
+ * meaning the card's interval resets to 1 day.
+ *
+ * @param card the lapsed card.
+ * @return the new interval in days (≥ 1).
+ */
+private lapseIvl(card: Flashcard): number {
+    const ivl = Math.floor(card.ivl * this.LAPSE_MULT);
+    return Math.max(1, Math.max(this.LAPSE_MIN_IVL, ivl));
+}
+
+// ── Scheduling helpers ────────────────────────────────────────────────
+
+/**
+ * Reschedules a learning card: sets its due date and keeps it in
+ * the LEARNING queue.
+ *
+ * If `delay` is `null`, the delay is derived from the
+ * card's current step using delayForGrade.
+ *
+ * @param card  the card to reschedule.
+ * @param conf  the step delays array (minutes).
+ * @param delay override delay in seconds, or `null` to
+ *              use the current step's delay.
+ * @return the delay that was applied (in seconds).
+ */
+private rescheduleLrnCard(card: Flashccard, conf: number[], delay: number | null): number {
+    if (delay === null) {
+        delay = this.delayForGrade(conf, card.left);
+    }
+
+    // Set due = now + delay (epoch seconds).
+    card.due = Math.floor(Date.now() / 1000);
+
+    // Keep (or move) the card in the learning queue.
+    card.queue = "LEARNING";
+
+    return delay;
+}
+
+  //CHECKPOINT
+
 }
 
 /*

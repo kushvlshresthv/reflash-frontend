@@ -31,6 +31,7 @@ export interface Flashcard {
   lapses: number;
   left: number;
   due: number;
+  dirty: boolean;
 }
 
 
