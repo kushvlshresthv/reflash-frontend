@@ -1,3 +1,6 @@
+import id from "@angular/common/locales/id";
+import { queue } from "rxjs";
+
 export interface Popup {
   message: string;
   type: 'Error' | 'Success';
@@ -8,10 +11,13 @@ export interface Popup {
 
 export interface Deck {
   id: number;
-  name: string;
-  crt: number;
+  courseName: string;
+  deckName: string;
   flashcards: Flashcard[];
 }
+
+
+
 
 export interface Flashcard {
   id: number;
@@ -25,14 +31,15 @@ export interface Flashcard {
   lapses: number;
   left: number;
   due: number;
-  deck: Deck;
 }
+
 
 export interface Note {
   id: number;
-  flashcard: Flashcard;
   front: string;
   back: string;
+  additionalContext: string;
+  tags: string[];
 }
 
 export interface CourseStudent {

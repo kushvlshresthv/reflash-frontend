@@ -1,25 +1,25 @@
-import { Deck, Flashcard } from "../models/models";
-import seedrandom from "seedrandom";
+import { Deck, Flashcard } from '../models/models';
+import seedrandom from 'seedrandom';
 
 class Scheduler {
   private deck: Deck;
 
+  //count the number of cards reviewd today
   private reps: number;
 
-  
   //Upper limit for the number of learning cards that can be fetched in a single session
   private reportLimit = 1000;
 
-
+  //days since the creation of the deck
   private today: number;
 
-  private lrnCutoff = 0; 
+  private lrnCutoff = 0;
 
   //The learn ahead limit in seconds
   private static COLLAPSE_TIME = 1200;
 
   //Maximum number of new cards to introduce per day
-  private static NEW_CARDS_PER_DAY = 20; 
+  private static NEW_CARDS_PER_DAY = 20;
 
   //Maximum number of review cards to show per day
   private static REVIEW_CARDS_PER_DAY = 200;
@@ -57,7 +57,7 @@ class Scheduler {
   //by pressing EASY during learning
   private static EASY_IVL = 4;
 
-  //Multiplier applied to the interval 
+  //Multiplier applied to the interval
   //When the user presses HARD in a review card
   private static HARD_FACTOR = 1.2;
 
@@ -69,11 +69,10 @@ class Scheduler {
   //No card will ever be scheduled further out than this
   private static MAX_IVL = 36500;
 
-
   //Constants that control when NEW cards appears in a session
   private static NEW_CARDS_DISTRIBUTE = 0;
-  private static NEW_CARDS_LAST       = 1;
-  private static NEW_CARDS_FIRST      = 2;
+  private static NEW_CARDS_LAST = 1;
+  private static NEW_CARDS_FIRST = 2;
 
   private newSpread = Scheduler.NEW_CARDS_DISTRIBUTE;
 
@@ -89,39 +88,34 @@ class Scheduler {
   private revQueue: Flashcard[] = [];
 
   //Determines how often a new card is inserted between review and learning cards
-  private newCardModulus = 0; 
+  private newCardModulus = 0;
 
-
-  constructor(deck:Deck) {
+  constructor(deck: Deck, reps: number = 0) {
     this.deck = deck;
-    this.reps = 0; 
+    this.reps = reps;
     this.today = this.daysSinceCreation();
     this.reset();
   }
 
-
-
   /**
-  * Returns how many full days have passed since the parent Deck
-  * was created.
-  *
-  * We implement this:
-  *   (currentEpochSeconds − deck.crt) / 86400   (integer division)
-  *
-  * @returns number of elapsed days (≥ 0).
-  */
+   * Returns how many full days have passed since the parent Deck
+   * was created.
+   *
+   * We implement this:
+   *   (currentEpochSeconds − deck.crt) / 86400   (integer division)
+   *
+   * @returns number of elapsed days (≥ 0).
+   */
   private daysSinceCreation(): number {
-    const nowSeconds = Math.floor(Date.now()/1000);     // current epoch seconds
-    const crt = this.deck.crt;                   // collection creation (epoch s)
+    const nowSeconds = Math.floor(Date.now() / 1000); // current epoch seconds
+    const crt = this.deck.crt; // collection creation (epoch s)
 
-    console.log("TODO: verify if the daysSinceCreation works properly");
+    console.log('TODO: verify if the daysSinceCreation works properly');
 
     // 86400 seconds = 1 day
     return Math.floor((nowSeconds - crt) / 86400);
+  }
 
-  }  
-
-  
   //Resets the scheduler's daily state, called by the constructor
   private reset() {
     this.resetLrn();
@@ -136,101 +130,93 @@ class Scheduler {
     this.updateNewCardRatio();
   }
 
-
   /**
-  * Recalculates the learn-ahead cutoff if enough time has passed
-  * (or if forced).
-  *
-  * Logic:
-  *   • Compute a candidate cutoff = now + collapseTime (20 min).
-  *   • Only apply it if it differs from the current cutoff by more
-  *     than 60 seconds, or if `force` is true.
-  *   • This avoids recalculating too frequently while still keeping
-  *     the window reasonably up-to-date.
-  */
+   * Recalculates the learn-ahead cutoff if enough time has passed
+   * (or if forced).
+   *
+   * Logic:
+   *   • Compute a candidate cutoff = now + collapseTime (20 min).
+   *   • Only apply it if it differs from the current cutoff by more
+   *     than 60 seconds, or if `force` is true.
+   *   • This avoids recalculating too frequently while still keeping
+   *     the window reasonably up-to-date.
+   */
   updateLrnCutoff(force: boolean): boolean {
-      const nextCutoff = Math.floor(Date.now() / 1000) + Scheduler.COLLAPSE_TIME;
-      /* Has the window shifted forward by more than 60 seconds?
-      *  OR is it forced, if yes then update the lrnCutoff
-      */
-      if (nextCutoff - this.lrnCutoff > 60 || force) {
-          this.lrnCutoff = nextCutoff;
-          return true;
-      }
-      return false;
+    const nextCutoff = Math.floor(Date.now() / 1000) + Scheduler.COLLAPSE_TIME;
+    /* Has the window shifted forward by more than 60 seconds?
+     *  OR is it forced, if yes then update the lrnCutoff
+     */
+    if (nextCutoff - this.lrnCutoff > 60 || force) {
+      this.lrnCutoff = nextCutoff;
+      return true;
+    }
+    return false;
   }
 
-
-
-
-
   /**
-  * Fills the new-card queue if it is empty.
-  *
-  * Logic (mirrors Anki):
-  *   1. If the queue already has cards, return true immediately (no work needed).
-  *   2. Otherwise, find all cards in the deck whose queue == NEW.
-  *   3. Sort them by {@code due} (which equals the note id for new cards,
-  *      so they appear in creation order).
-  *   4. Trim to the daily limit: NEW_CARDS_PER_DAY.
-  *   5. Return true if there are cards to study, false otherwise.
-  *
-  * @returns true if the new-card queue is non-empty after filling.
-  */
+   * Fills the new-card queue if it is empty.
+   *
+   * Logic (mirrors Anki):
+   *   1. If the queue already has cards, return true immediately (no work needed).
+   *   2. Otherwise, find all cards in the deck whose queue == NEW.
+   *   3. Sort them by {@code due} (which equals the note id for new cards,
+   *      so they appear in creation order).
+   *   4. Trim to the daily limit: NEW_CARDS_PER_DAY.
+   *   5. Return true if there are cards to study, false otherwise.
+   *
+   * @returns true if the new-card queue is non-empty after filling.
+   */
   fillNew(): boolean {
-      // Already have cards? Nothing to do.
-      if (this.newQueue.length > 0) {
-          return true;
-      }
+    // Already have cards? Nothing to do.
+    if (this.newQueue.length > 0) {
+      return true;
+    }
 
-      // Daily limit for new cards
-      const limit = Scheduler.NEW_CARDS_PER_DAY;
+    // Daily limit for new cards
+    const limit = Scheduler.NEW_CARDS_PER_DAY;
 
-      // Filter: only cards sitting in the NEW queue (queue == 0).
-      // Sort:   by due (= note id → creation order).
-      // Limit:  take at most `limit` cards.
-      this.newQueue = this.deck.flashcards
-          .filter(card => card.queue === 'NEW')
-          .sort((a, b) => a.crt - b.crt)
-          .slice(0, limit);
+    // Filter: only cards sitting in the NEW queue (queue == 0).
+    // Sort:   by due (= note id → creation order).
+    // Limit:  take at most `limit` cards.
+    this.newQueue = this.deck.flashcards
+      .filter((card) => card.queue === 'NEW')
+      .sort((a, b) => a.crt - b.crt)
+      .slice(0, limit);
 
-      return this.newQueue.length > 0;
+    return this.newQueue.length > 0;
   }
 
-
-
   /**
-  * Determines how often a new card should appear among review cards.
-  *
-  * When {@code newSpread == NEW_CARDS_DISTRIBUTE}:
-  *   ratio = (newCount + revCount) / newCount
-  *   If there are review cards, enforce ratio ≥ 2 so that at least
-  *   one review card appears between every two new cards.
-  */
+   * Determines how often a new card should appear among review cards.
+   *
+   * When {@code newSpread == NEW_CARDS_DISTRIBUTE}:
+   *   ratio = (newCount + revCount) / newCount
+   *   If there are review cards, enforce ratio ≥ 2 so that at least
+   *   one review card appears between every two new cards.
+   */
   private updateNewCardRatio(): void {
-      if (this.newSpread === Scheduler.NEW_CARDS_DISTRIBUTE) {
-          if (this.newQueue.length > 0) {
+    if (this.newSpread === Scheduler.NEW_CARDS_DISTRIBUTE) {
+      if (this.newQueue.length > 0) {
+        const newCount = this.newQueue.length;
 
-              const newCount = this.newQueue.length;
+        // NOTE: resetRev() is called before resetNew() which in turn calls this method.
+        // Therefore, the review queue has already been populated.
+        const revCount = this.revQueue ? this.revQueue.length : 0;
 
-              // NOTE: resetRev() is called before resetNew() which in turn calls this method.
-              // Therefore, the review queue has already been populated.
-              const revCount = this.revQueue ? this.revQueue.length : 0;
+        this.newCardModulus = Math.floor((newCount + revCount) / newCount);
 
-              this.newCardModulus = Math.floor((newCount + revCount) / newCount);
+        // If there are review cards, make sure we don't show two
+        // new cards in a row — enforce a minimum modulus of 2.
+        if (revCount > 0) {
+          this.newCardModulus = Math.max(2, this.newCardModulus);
+        }
 
-              // If there are review cards, make sure we don't show two
-              // new cards in a row — enforce a minimum modulus of 2.
-              if (revCount > 0) {
-                  this.newCardModulus = Math.max(2, this.newCardModulus);
-              }
-
-              return;
-          }
+        return;
       }
+    }
 
-      // Default: do not distribute new cards (show them at the end).
-      this.newCardModulus = 0;
+    // Default: do not distribute new cards (show them at the end).
+    this.newCardModulus = 0;
   }
 
   private resetLrn() {
@@ -238,109 +224,245 @@ class Scheduler {
     this.lrnQueue = [];
   }
 
-
   /**
-  * Fills the learning queue if it is empty.
-  *
-  * Logic :
-  *   1. If the queue already has cards, return true.
-  *   2. Compute a cutoff = now + collapseTime (learn-ahead window).
-  *   3. Find all cards whose queue == LEARNING  due < cutoff.
-  *   4. Sort by id (≈ creation timestamp, so older learning cards first).
-  *   4. Sorted by the due date instead(changed from the original implementation)
-  *   5. Trim to reportLimit.
-  */
+   * Fills the learning queue if it is empty.
+   *
+   * Logic :
+   *   1. If the queue already has cards, return true.
+   *   2. Compute a cutoff = now + collapseTime (learn-ahead window).
+   *   3. Find all cards whose queue == LEARNING  due < cutoff.
+   *   4. Sort by id (≈ creation timestamp, so older learning cards first).
+   *   4. Sorted by the due date instead(changed from the original implementation)
+   *   5. Trim to reportLimit.
+   */
   fillLrn(): boolean {
-      if (this.lrnQueue.length > 0) {
-          return true;
-      }
+    if (this.lrnQueue.length > 0) {
+      return true;
+    }
 
-      // How far into the future we're willing to look for learning cards.
-      const cutoff = Math.floor(Date.now() / 1000) + Scheduler.COLLAPSE_TIME;
+    // How far into the future we're willing to look for learning cards.
+    const cutoff = Math.floor(Date.now() / 1000) + Scheduler.COLLAPSE_TIME;
 
-      // ORIGINAL
-      // Filter: queue == LEARNING *and* due timestamp hasn't passed the cutoff.
-      // Sort:   by card.id (= creation timestamp → FIFO order).
-      // Limit:  reportLimit.
+    // ORIGINAL
+    // Filter: queue == LEARNING *and* due timestamp hasn't passed the cutoff.
+    // Sort:   by card.id (= creation timestamp → FIFO order).
+    // Limit:  reportLimit.
 
-      // NEW FIX: sort by due date
-      this.lrnQueue = this.deck.flashcards
-          .filter(card =>
-              card.queue === 'LEARNING' &&
-              card.due < cutoff
-          )
-          .sort((a, b) => a.due - b.due)
-          .slice(0, this.reportLimit);
+    // NEW FIX: sort by due date
+    this.lrnQueue = this.deck.flashcards
+      .filter((card) => card.queue === 'LEARNING' && card.due < cutoff)
+      .sort((a, b) => a.due - b.due)
+      .slice(0, this.reportLimit);
 
-      return this.lrnQueue.length > 0;
+    return this.lrnQueue.length > 0;
   }
-
 
   private resetRev() {
     this.revQueue = [];
   }
 
-  
   /**
-  * Fills the review queue if it is empty.
-  *
-  * Logic:
-  *   1. If the queue already has cards, return true.
-  *   2. Find all cards whose queue == REVIEW **and** due <= today.
-  *      (due for review cards is a day-offset relative to the collection's
-  *       creation time, so we compare against {@code this.today}.)
-  *   3. Sort by due date.
-  *   4. Trim to daily limit: min(queueLimit, REVIEW_CARDS_PER_DAY).
-  *   5. Shuffle the result using a deterministic seed (= today)
-  *      so that the order is randomised but reproducible within the
-  *      same day.
-  *
-  * @returns true if the review queue is non-empty after filling.
-  */
-  fillRev(): boolean {
-      if (this.revQueue.length > 0) {
-          return true;
-      }
+   * Fills the review queue if it is empty.
+   *
+   * Logic:
+   *   1. If the queue already has cards, return true.
+   *   2. Find all cards whose queue == REVIEW **and** due <= today.
+   *      (due for review cards is a day-offset relative to the collection's
+   *       creation time, so we compare against {@code this.today}.)
+   *   3. Sort by due date.
+   *   4. Trim to daily limit: min(queueLimit, REVIEW_CARDS_PER_DAY).
+   *   5. Shuffle the result using a deterministic seed (= today)
+   *      so that the order is randomised but reproducible within the
+   *      same day.
+   *
+   * @returns true if the review queue is non-empty after filling.
+   */
+  private fillRev(): boolean {
+    if (this.revQueue.length > 0) {
+      return true;
+    }
 
-      const limit = Scheduler.REVIEW_CARDS_PER_DAY;
+    const limit = Scheduler.REVIEW_CARDS_PER_DAY;
 
-      // Filter: queue == REVIEW and due day has arrived (due <= today).
-      // Sort:   by due (so oldest-due cards are picked first).
-      // Limit:  daily cap.
-      this.revQueue = this.deck.flashcards
-          .filter(card =>
-              card.queue === 'REVIEW' &&
-              card.due <= this.today
-          )
-          .sort((a, b) => a.due - b.due)
-          .slice(0, limit);
+    // Filter: queue == REVIEW and due day has arrived (due <= today).
+    // Sort:   by due (so oldest-due cards are picked first).
+    // Limit:  daily cap.
+    this.revQueue = this.deck.flashcards
+      .filter((card) => card.queue === 'REVIEW' && card.due <= this.today)
+      .sort((a, b) => a.due - b.due)
+      .slice(0, limit);
 
     //TODO: fix this, i did npm install seedrandom
-      if (this.revQueue.length > 0) {
-          // Shuffle with a seed = today so the order is random but
-          // consistent within the same day (restarting the app doesn't
-          // re-shuffle).
+    if (this.revQueue.length > 0) {
+      // Shuffle with a seed = today so the order is random but
+      // consistent within the same day (restarting the app doesn't
+      // re-shuffle).
       const rng = seedrandom(String(this.today));
 
       this.revQueue.sort(() => rng() - 0.5);
 
       return true;
-      }
+    }
 
-      return false;
+    return false;
   }
 
+  // =====================================================================
+  //  CARD RETRIEVAL — public API
+  // =====================================================================
+
+  /**
+   * Returns the next card to study, or `null` if the session is over.
+   *
+   * `reps` counter is incremented — this counter drives the
+   * new-card distribution logic (`timeForNewCard()`).
+   *
+   * Mirrors Anki's Scheduler.getCard().
+   */
+  public getCard(): Flashcard | null {
+    const card = this.getCardInternal();
+    if (card !== null) {
+      // Increment the session counter.  This is used by
+      // timeForNewCard() to decide when to interleave a new card.
+      this.reps += 1;
+      return card;
+    }
+    // No cards left — study session is complete.
+    return null;
+  }
+
+  // =====================================================================
+  //  CARD RETRIEVAL — internal logic
+  // =====================================================================
+
+  /**
+   * Core card-selection logic.  Tries the queues in a carefully chosen
+   * order that mirrors Anki's priority:
+   *
+   *   1. Learning cards that are due right now   (highest priority)
+   *   2. New cards — IF it's "time" for one       (interleave / first)
+   *   3. Review cards
+   *   4. New cards — any remaining                (catch-all)
+   *   5. Learning cards — with collapse           (look-ahead window)
+   *
+   * The first non-null result wins.
+   *
+   * Mirrors Anki's Scheduler._getCard().
+   *
+   * @returns the next due card, or `null` if nothing is available.
+   */
+  private getCardInternal(): Flashcard | null {
+    // 1. Learning card due right now?
+    let c = this.getLrnCard();
+    if (c !== null) return c;
+
+    // 2. Is it time to show a new card (distribute / first)?
+    if (this.timeForNewCard()) {
+      c = this.getNewCard();
+      if (c !== null) return c;
+    }
+
+    // 3. Review card due today?
+    c = this.getRevCard();
+    if (c !== null) return c;
+
+    // 4. Any new cards left (covers NEW_CARDS_LAST and exhausted reviews)?
+    c = this.getNewCard();
+    if (c !== null) return c;
+
+    // 5. Collapse: look ahead for learning cards within the collapse window.
+    //    This avoids ending the session when a learning card is almost due.
+    c = this.getLrnCardWithReset();
+    return c; // may be null → session over
+  }
+
+
+
+
+  // ── new cards ──────────────────────────────────────────────────────────
+
+  /**
+   * Pops and returns the next new card from the queue, or `null`.
+   *
+   * The queue is lazily filled by `fillNew()` the first time
+   * this method is called.
+   *
+   */
+  private getNewCard(): Flashcard | null {
+    if (this.fillNew()) {
+      // Pop the last element (most efficient for an array).
+      return this.newQueue.pop() || null;
+    }
+    return null;
+  }
+
+  /**
+   * Decides whether it is time to show a new card right now.
+   *
+   * The decision depends on the `newSpread` setting:
+   *   - NEW_CARDS_LAST       → never (new cards come after reviews).
+   *   - NEW_CARDS_FIRST      → always (new cards come before reviews).
+   *   - NEW_CARDS_DISTRIBUTE → yes if  reps % newCardModulus == 0
+   *                            (i.e. every N-th card is a new card).
+   *
+   * @returns true if a new card should be shown now.
+   */
+  private timeForNewCard(): boolean {
+    // No new cards available? Nothing to decide.
+    if (this.newQueue.length === 0 && !this.fillNew()) return false;
+
+    if (this.newSpread === Scheduler.NEW_CARDS_LAST) {
+      // New cards are shown only after all reviews are done.
+      return false;
+    } else if (this.newSpread === Scheduler.NEW_CARDS_FIRST) {
+      // New cards are shown before any reviews.
+      return true;
+    } else {
+      // NEW_CARDS_DISTRIBUTE:
+      // Show a new card every `newCardModulus` reviews.
+      // reps is 0-based at this point so the very first card (reps==0)
+      // won't match; that's fine — a learning/review card goes first.
+      return this.newCardModulus !== 0 && this.reps > 0 && this.reps % this.newCardModulus === 0;
+    }
+  }
+
+  // ── learning cards ────────────────────────────────────────────────────
+
+  /**
+   * Pops and returns the next learning card from the queue, or `null`.
+   */
+  private getLrnCard(): Flashcard | null {
+    if (this.fillLrn()) return this.lrnQueue.pop() || null;
+    return null;
+  }
+
+  /**
+   * resets the lrnCutoff, then the queue, and then tries to return the card
+  */
+
+  private getLrnCardWithReset(): Flashcard | null {
+      // update the cut off
+      this.updateLrnCutoff(true);
+
+      // reset the lrnQueue
+      this.resetLrn();
+
+      if (this.fillLrn()) {
+          return this.lrnQueue.pop() || null;
+      }
+      return null;
+  }
+
+  // ── review cards ──────────────────────────────────────────────────────
+
+  /**
+   * Pops and returns the next review card from the queue, or `null`.
+   */
+  private getRevCard(): Flashcard | null {
+    if (this.fillRev()) return this.revQueue.pop() || null;
+    return null;
+  }
 }
-
-
-
-
-
-
-
-
-
-
 
 /*
 
