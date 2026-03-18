@@ -19,6 +19,6 @@ export class CourseComponent {
   toggleMenu = output<{event: Event, id: number}>();
 
   toggleMenuEvent(eventObj: Event) {
-    this.toggleMenu.emit({event: eventObj, id: this.course().id});
+    this.toggleMenu.emit({event: eventObj, id: this.course().courseId});
   }
 }

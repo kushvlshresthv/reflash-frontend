@@ -1,11 +1,11 @@
 <div
   class="course-card"
   routerLink="/course/decks"
-  [queryParams]="{ courseId: course().id }">
+  [queryParams]="{ courseId: course().courseId }">
   <div class="card-header">
     <div class="header-content">
       <h3 class="course-name">
-        {{ course().name }}
+        {{ course().courseName }}
       </h3>
     </div>
     <div class="menu-btn-container">
@@ -17,7 +17,7 @@
     <div class="info-grid">
       <div class="info-item">
         <span class="label">ID</span>
-        <span class="value">{{ course().id }}</span>
+        <span class="value">{{ course().courseId }}</span>
       </div>
     </div>
   </div>

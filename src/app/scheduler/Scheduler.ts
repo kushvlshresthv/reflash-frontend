@@ -2,6 +2,7 @@ import { Deck, Flashcard } from '../models/models';
 import seedrandom from 'seedrandom';
 
 class Scheduler {
+  //initialized by the constructor
   private deck: Deck;
 
   //count the number of cards reviewd today
@@ -13,6 +14,7 @@ class Scheduler {
   //days since the creation of the deck
   private today: number;
 
+  //look-ahead cutoff for learning cards
   private lrnCutoff = 0;
 
   //The learn ahead limit in seconds
@@ -94,6 +96,7 @@ class Scheduler {
   private newCardModulus = 0;
 
   constructor(deck: Deck, reps: number = 0) {
+    console.log(deck);
     this.deck = deck;
     this.reps = reps;
     this.today = this.daysSinceCreation();
@@ -113,10 +116,10 @@ class Scheduler {
     const nowSeconds = Math.floor(Date.now() / 1000); // current epoch seconds
     const crt = this.deck.crt; // collection creation (epoch s)
 
-    console.log('TODO: verify if the daysSinceCreation works properly');
-
     // 86400 seconds = 1 day
-    return Math.floor((nowSeconds - crt) / 86400);
+    const daysSinceCreation = Math.floor((nowSeconds - crt) / 86400);
+    console.log('DEBUG: daySinceCreationVariable = ' + daysSinceCreation);
+    return daysSinceCreation;
   }
 
   //Resets the scheduler's daily state, called by the constructor
@@ -179,11 +182,11 @@ class Scheduler {
     const limit = Scheduler.NEW_CARDS_PER_DAY;
 
     // Filter: only cards sitting in the NEW queue (queue == 0).
-    // Sort:   by due (= note id → creation order).
+    // Sort:   by due (for the new cards, due date = note.crt, set by the backend)
     // Limit:  take at most `limit` cards.
     this.newQueue = this.deck.flashcards
       .filter((card) => card.queue === 'NEW')
-      .sort((a, b) => a.crt - b.crt)
+      .sort((a, b) => b.due - a.due)
       .slice(0, limit);
 
     return this.newQueue.length > 0;
@@ -218,7 +221,7 @@ class Scheduler {
       }
     }
 
-    // Default: do not distribute new cards (show them at the end).
+    // Default: do not distribute new cards
     this.newCardModulus = 0;
   }
 
@@ -238,13 +241,19 @@ class Scheduler {
    *   4. Sorted by the due date instead(changed from the original implementation)
    *   5. Trim to reportLimit.
    */
-  fillLrn(): boolean {
+  fillLrn(lookAhead = false): boolean {
     if (this.lrnQueue.length > 0) {
       return true;
     }
 
     // How far into the future we're willing to look for learning cards.
-    const cutoff = Math.floor(Date.now() / 1000) + Scheduler.COLLAPSE_TIME;
+    let cutoff: number;
+    if(lookAhead) {
+      this.resetLrn();
+      cutoff = this.lrnCutoff;
+    } else {
+      cutoff = Math.floor(Date.now() / 1000);
+    }
 
     // ORIGINAL
     // Filter: queue == LEARNING *and* due timestamp hasn't passed the cutoff.
@@ -254,7 +263,7 @@ class Scheduler {
     // NEW FIX: sort by due date
     this.lrnQueue = this.deck.flashcards
       .filter((card) => card.queue === 'LEARNING' && card.due < cutoff)
-      .sort((a, b) => a.due - b.due)
+      .sort((a, b) => b.due - a.due)
       .slice(0, this.reportLimit);
 
     return this.lrnQueue.length > 0;
@@ -323,6 +332,10 @@ class Scheduler {
    * Mirrors Anki's Scheduler.getCard().
    */
   public getCard(): Flashcard | null {
+    if (this.dirtyCards.length > 3) {
+      console.log('DEBUG(returning new card): reps' + this.reps);
+      console.log(this.dirtyCards);
+    }
     const card = this.getCardInternal();
     if (card !== null) {
       // Increment the session counter.  This is used by
@@ -330,6 +343,7 @@ class Scheduler {
       this.reps += 1;
       return card;
     }
+    console.log('DEBUG: session finished, comeback later');
     // No cards left — study session is complete.
     return null;
   }
@@ -441,13 +455,8 @@ class Scheduler {
    */
 
   private getLrnCardWithReset(): Flashcard | null {
-    // update the cut off
-    this.updateLrnCutoff(true);
-
     // reset the lrnQueue
-    this.resetLrn();
-
-    if (this.fillLrn()) {
+    if (this.fillLrn(true)) {
       return this.lrnQueue.pop() || null;
     }
     return null;
@@ -543,7 +552,10 @@ class Scheduler {
   private answerNewCard(card: Flashcard, ease: number): void {
     // Move from the NEW queue → LEARNING queue.
     card.queue = 'LEARNING';
+    console.log(`DEBUG: card queue set to ${card.queue}` )
+
     card.type = 'LEARNING';
+    console.log(`DEBUG: card type set to ${card.type}` )
 
     // Initialise the learning-steps counter.
     // This tells the scheduler how many steps are left before
@@ -625,8 +637,7 @@ class Scheduler {
       // "Good" — check if the card has finished all its steps.
       // card.left % 1000 gives the total steps remaining.
       // If only 1 (or 0) step remains, the card graduates.
-      const stepsLeft = card.left;
-      if (stepsLeft - 1 <= 0) {
+      if (card.left == 1) {
         // No more steps → graduate to review.
         this.rescheduleAsRev(card, conf, false);
       } else {
@@ -679,6 +690,7 @@ class Scheduler {
    */
   private updateRevIvlOnFail(card: Flashcard): void {
     card.ivl = this.lapseIvl(card);
+    console.log(`DEBUG: ivl value set to ${card.ivl} days` )
   }
 
   /**
@@ -719,9 +731,11 @@ class Scheduler {
 
     // Set due = now + delay (epoch seconds).
     card.due = Math.floor(Date.now() / 1000) + delay!;
+    console.log(`DEBUG: due value ${delay} seconds from now` )
 
     // Keep (or move) the card in the learning queue.
     card.queue = 'LEARNING';
+    console.log(`DEBUG: card queue set to ${card.queue}` )
 
     return delay;
   }
@@ -742,6 +756,10 @@ class Scheduler {
   private delayForGrade(conf: number[], left: number): number {
     // left is directly the number of steps remaining.
     const stepsRemaining = left;
+
+    if (stepsRemaining == 0) {
+      throw new Error("step can't be zero");
+    }
 
     // For the first step, stepsRemaining = conf.length and hence 0th index is accessed.
     const delayMinutes = conf[conf.length - stepsRemaining];
@@ -775,7 +793,7 @@ class Scheduler {
     // "Hard" — repeat the current step, but with a slightly longer delay.
     // Instead of using the exact same delay, we average the current step's
     // delay with the next step's delay so the wait is a bit longer.
-    const delay = this.delayForRepeatingGrade(conf, card.left);
+    const delay = this.delayForRepeatingGrade(card, conf, card.left);
     this.rescheduleLrnCard(card, conf, delay);
   }
 
@@ -799,20 +817,28 @@ class Scheduler {
    * @param left the card's left field.
    * @returns delay in seconds.
    */
-  private delayForRepeatingGrade(conf: number[], left: number): number {
+  private delayForRepeatingGrade(card: Flashcard, conf: number[], left: number): number {
     const delay1 = this.delayForGrade(conf, left);
     let delay2: number;
-    const next = left - 1;
+
+    //TODO: read below
+    //NOTE: improvisation for relearning cards, where the again button causes 15 minute delay. Following logic, we will get a delay of 10 minnute, but the 'again' button aeready provides a delay of 10 minute
+    if(card.type === "RELEARNING") {
+      return 15 * 60;
+    }
 
     // If this is the last step, delay2 = delay1, else delay2 = next delay option
-    if (next === 0) {
+    if (left == 1) {
       delay2 = delay1;
     } else {
       delay2 = this.delayForGrade(conf, left - 1);
     }
     // Average of current delay and the larger of the two.
     // This ensures the result is always >= delay1.
-    return Math.floor((delay1 + Math.max(delay1, delay2)) / 2);
+    const delaySeconds = delay1 + Math.max(delay1, delay2) / 2;
+    //doing this because we want to apply ceiling on minute, not seconds
+    const delayMinute = Math.ceil(delaySeconds/60);
+    return delayMinute * 60;
   }
 
   // =====================================================================
@@ -837,9 +863,15 @@ class Scheduler {
     // Was this card in the review queue before it lapsed?
     // card.type tracks the *original* state: REVIEW means it was a review
     // card that failed and entered relearning.
-    const lapse = card.type === 'REVIEW';
+    const lapse = card.type === 'REVIEW' || card.type === 'RELEARNING';
 
     if (lapse) {
+      //TODO
+      //NOTE: here, in relearning cards, the good option already has today + card.ivl( ie1 day) for the next due date
+      //NOTE: hence, changing the due date for 'easy' option to 2 days
+      card.ivl = 2;
+      console.log(`DEBUG: ivl value set to ${card.ivl} days` )
+
       this.rescheduleGraduatingLapse(card);
     } else {
       this.rescheduleNew(card, conf, early);
@@ -858,8 +890,13 @@ class Scheduler {
   private rescheduleGraduatingLapse(card: Flashcard): void {
     // due for review cards = day offset relative to collection creation.
     card.due = this.today + card.ivl;
+    console.log(`DEBUG: due value ${card.ivl} days from today` )
+
     card.type = 'REVIEW';
+    console.log(`DEBUG: card type set to ${card.type}` )
+
     card.queue = 'REVIEW';
+    console.log(`DEBUG: card queue set to ${card.queue}` )
   }
 
   /**
@@ -876,10 +913,19 @@ class Scheduler {
    */
   private rescheduleNew(card: Flashcard, conf: number[], early: boolean): void {
     card.ivl = this.graduatingIvl(card, conf, early);
+    console.log(`DEBUG: ivl value set to ${card.ivl} days` )
+
+
     card.due = this.today + card.ivl;
+    console.log(`DEBUG: due value ${card.ivl} days from today` )
+
     card.factor = Scheduler.INITIAL_FACTOR;
     card.type = 'REVIEW';
+    console.log(`DEBUG: card type set to ${card.type}` )
+
+
     card.queue = 'REVIEW';
+    console.log(`DEBUG: card queue set to ${card.queue}` )
   }
 
   /**
@@ -967,7 +1013,9 @@ class Scheduler {
       // 4a. Not a leech → enter relearning.
       //     Keep type = REVIEW so that lrnConf() returns LAPSE_STEPS
       //     and rescheduleAsRev() knows this is a lapse (not a new card).
-      card.type = 'REVIEW';
+      card.type = 'RELEARNING';
+      console.log(`DEBUG: card type set to ${card.type}` )
+
       this.moveToFirstStep(card, Scheduler.LAPSE_STEPS);
     } else {
       // 4b. Suspended as a leech → no relearning steps.
@@ -1001,6 +1049,8 @@ class Scheduler {
       }
       // Suspend the card — it will no longer appear in any queue.
       card.queue = 'SUSPENDED';
+      console.log(`DEBUG: card queue set to ${card.queue}` )
+
       return true;
     }
     return false;
@@ -1035,10 +1085,16 @@ class Scheduler {
 
     // 3. Set the due date = today + new interval (day offset).
     card.due = this.today + card.ivl;
+    console.log(`DEBUG: due value ${card.ivl} days from now` )
+
+
 
     // Keep the card in the review queue.
     card.type = 'REVIEW';
+    console.log(`DEBUG: card type set to ${card.type}` )
+
     card.queue = 'REVIEW';
+    console.log(`DEBUG: card queue set to ${card.queue}` )
   }
 
   /**
@@ -1046,6 +1102,7 @@ class Scheduler {
    */
   private updateRevIvl(card: Flashcard, ease: number): void {
     card.ivl = this.nextRevIvl(card, ease);
+    console.log(`DEBUG: ivl value set to ${card.ivl} days` )
   }
 
   // =====================================================================
@@ -1210,6 +1267,162 @@ class Scheduler {
     fuzz = Math.max(fuzz, 1);
 
     return [ivl - fuzz, ivl + fuzz];
+  }
+
+  // private getButtonValues(card: Flashcard): {
+  //   easy: string;
+  //   good: string;
+  //   hard: string;
+  //   again: string;
+  // } {
+  //   if ((card.type = 'NEW')) {
+  //     return {
+  //       easy: '4 day',
+  //       good: '10 minutes',
+  //       hard: '6 minutes',
+  //       again: '1 minute',
+  //     };
+  //   } else if ((card.type = 'LEARNING')) {
+  //     let againStep = this.lrnConf(card)[0] + ' minutes';
+  //     let hardStep = '';
+  //     let goodStep = '';
+  //     let easyStep = '4 days'; //easy step is always 4
+
+  //     //NOTE: cards start at conf.length and the last step is '1'
+  //     if (card.left == 1) {
+  //       //since this is the last step left, the next step will be graduation
+  //       const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
+  //       //there is no next step
+  //       const nextStep = currentStep;
+
+  //       //since this is the last step
+  //       goodStep = Scheduler.GRADUATING_IVL + ' days';
+
+  //       hardStep = Math.floor((currentStep + Math.max(currentStep, nextStep)) / 2) + ' minutes';
+  //     } else if (card.left == 2) {
+  //       const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
+  //       const nextStep = this.delayForGrade(this.lrnConf(card), card.left - 1);
+
+  //       goodStep = nextStep + ' minutes';
+
+  //       hardStep = Math.ceil((currentStep + Math.max(currentStep, nextStep)) / 2) + ' minutes';
+  //     }
+
+  //     return {
+  //       easy: easyStep,
+  //       good: goodStep,
+  //       hard: hardStep,
+  //       again: againStep,
+  //     };
+  //   } else if (card.type == 'RELEARNING') {
+  //     let againStep = this.lrnConf(card)[0] + ' minutes';
+  //     let hardStep = '15 minutes'; //NOTE: a hard-coded value for hard step in relearning cards(hard coded in delayForRepeatingGrade, read the NOTE in the method)
+  //     let goodStep = card.ivl + 'day';
+
+  //     //NOTE: a hardcoded value for easy step in relearing cards(hardcoded in rescheduleAsRev, read the NOTE there)
+  //     let easyStep = '2 days';
+
+  //     return {
+  //       easy: easyStep,
+  //       good: goodStep,
+  //       hard: hardStep,
+  //       again: againStep,
+  //     };
+  //   } else if ((card.type = 'REVIEW')) {
+  //     let hardStep = this.nextRevIvl(card, 2) + ' days';
+  //     let goodStep = this.nextRevIvl(card, 3) + ' days';
+  //     let easyStep = this.nextRevIvl(card, 4) + ' days';
+  //     let againStep = this.lrnConf(card)[0] + ' minutes';
+
+  //     return {
+  //       easy: easyStep,
+  //       good: goodStep,
+  //       hard: hardStep,
+  //       again: againStep,
+  //     };
+  //   }
+
+  //   return {
+  //     easy: '4 days',
+  //     good: '1 day',
+  //     hard: '6 minutes',
+  //     again: '1 minute',
+  //   };
+  // }
+
+  getButtonValues(card: Flashcard): {
+    easy: string;
+    good: string;
+    hard: string;
+    again: string;
+  } {
+    let hardStep = '' ;
+    let goodStep = '' ;
+    let easyStep = '' ;
+    let againStep = '';
+    switch (card.type) {
+      case 'NEW':
+        easyStep = '4 day';
+        goodStep = '10 minutes';
+        hardStep = '6 minutes';
+        againStep = '1 minute';
+        break;
+
+      case 'LEARNING':
+        againStep = this.lrnConf(card)[0] + ' minutes';
+        easyStep = '4 days'; //easy step is always 4
+
+        //NOTE: cards start at conf.length and the last step is '1'
+        if (card.left == 1) {
+          //since this is the last step left, the next step will be graduation
+          const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
+          //there is no next step
+          const nextStep = currentStep;
+
+          //since this is the last step
+          goodStep = Scheduler.GRADUATING_IVL + ' days';
+          hardStep = Math.floor((currentStep + Math.max(currentStep, nextStep)) / 2)/60 + ' minutes';
+          againStep = this.lrnConf(card)[0]+ ' minute';
+          easyStep = '4 days'
+
+        } else if (card.left == 2) {
+          const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
+          const nextStep = this.delayForGrade(this.lrnConf(card), card.left - 1);
+
+          goodStep = nextStep/60 + ' minutes';
+          hardStep = Math.ceil((currentStep + Math.max(currentStep, nextStep)) / 2/60) + ' minutes';
+          againStep = this.lrnConf(card)[0] + ' minute';
+          easyStep = '4 days'
+        }
+        break;
+
+      case 'RELEARNING':
+        againStep = this.lrnConf(card)[0] + ' minutes';
+        hardStep = '15 minutes'; //NOTE: a hard-coded value for hard step in relearning cards(hard coded in delayForRepeatingGrade, read the NOTE in the method)
+        goodStep = card.ivl + ' day';
+
+        //NOTE: a hardcoded value for easy step in relearing cards(hardcoded in rescheduleAsRev, read the NOTE there)
+        easyStep = '2 days';
+        break;
+
+      case 'REVIEW':
+        hardStep = this.nextRevIvl(card, 2) + ' days';
+        goodStep = this.nextRevIvl(card, 3) + ' days';
+        easyStep = this.nextRevIvl(card, 4) + ' days';
+        againStep = this.lrnConf(card)[0] + ' minutes';
+
+        break;
+
+      default:
+        throw new Error(`Unexpected card queue: ${card.queue}`);
+    }
+
+    return {
+      easy: easyStep,
+      good: goodStep,
+      hard: hardStep,
+      again: againStep,
+    };
   }
 }
 

@@ -16,7 +16,7 @@
 
     <div class="wrapper">
       <div class="decks">
-        @for (deck of decks; track deck.id) {
+        @for (deck of decks; track deck.deckId) {
           <app-deck [deck]="deck" (toggleMenu)="onMenuOptionClick($event)"></app-deck>
         }
       </div>

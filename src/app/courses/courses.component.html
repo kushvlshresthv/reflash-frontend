@@ -16,7 +16,7 @@
 
     <div class="wrapper">
       <div class="courses">
-        @for (course of courses; track course.id) {
+        @for (course of courses; track course.courseId) {
           <app-course [course]="course" (toggleMenu)="onMenuOptionClick($event)"></app-course>
         }
       </div>
