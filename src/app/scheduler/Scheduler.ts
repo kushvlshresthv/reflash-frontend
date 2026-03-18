@@ -1269,87 +1269,9 @@ class Scheduler {
     return [ivl - fuzz, ivl + fuzz];
   }
 
-  // private getButtonValues(card: Flashcard): {
-  //   easy: string;
-  //   good: string;
-  //   hard: string;
-  //   again: string;
-  // } {
-  //   if ((card.type = 'NEW')) {
-  //     return {
-  //       easy: '4 day',
-  //       good: '10 minutes',
-  //       hard: '6 minutes',
-  //       again: '1 minute',
-  //     };
-  //   } else if ((card.type = 'LEARNING')) {
-  //     let againStep = this.lrnConf(card)[0] + ' minutes';
-  //     let hardStep = '';
-  //     let goodStep = '';
-  //     let easyStep = '4 days'; //easy step is always 4
 
-  //     //NOTE: cards start at conf.length and the last step is '1'
-  //     if (card.left == 1) {
-  //       //since this is the last step left, the next step will be graduation
-  //       const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
-  //       //there is no next step
-  //       const nextStep = currentStep;
-
-  //       //since this is the last step
-  //       goodStep = Scheduler.GRADUATING_IVL + ' days';
-
-  //       hardStep = Math.floor((currentStep + Math.max(currentStep, nextStep)) / 2) + ' minutes';
-  //     } else if (card.left == 2) {
-  //       const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
-  //       const nextStep = this.delayForGrade(this.lrnConf(card), card.left - 1);
-
-  //       goodStep = nextStep + ' minutes';
-
-  //       hardStep = Math.ceil((currentStep + Math.max(currentStep, nextStep)) / 2) + ' minutes';
-  //     }
-
-  //     return {
-  //       easy: easyStep,
-  //       good: goodStep,
-  //       hard: hardStep,
-  //       again: againStep,
-  //     };
-  //   } else if (card.type == 'RELEARNING') {
-  //     let againStep = this.lrnConf(card)[0] + ' minutes';
-  //     let hardStep = '15 minutes'; //NOTE: a hard-coded value for hard step in relearning cards(hard coded in delayForRepeatingGrade, read the NOTE in the method)
-  //     let goodStep = card.ivl + 'day';
-
-  //     //NOTE: a hardcoded value for easy step in relearing cards(hardcoded in rescheduleAsRev, read the NOTE there)
-  //     let easyStep = '2 days';
-
-  //     return {
-  //       easy: easyStep,
-  //       good: goodStep,
-  //       hard: hardStep,
-  //       again: againStep,
-  //     };
-  //   } else if ((card.type = 'REVIEW')) {
-  //     let hardStep = this.nextRevIvl(card, 2) + ' days';
-  //     let goodStep = this.nextRevIvl(card, 3) + ' days';
-  //     let easyStep = this.nextRevIvl(card, 4) + ' days';
-  //     let againStep = this.lrnConf(card)[0] + ' minutes';
-
-  //     return {
-  //       easy: easyStep,
-  //       good: goodStep,
-  //       hard: hardStep,
-  //       again: againStep,
-  //     };
-  //   }
-
-  //   return {
-  //     easy: '4 days',
-  //     good: '1 day',
-  //     hard: '6 minutes',
-  //     again: '1 minute',
-  //   };
-  // }
-
+  //get the button values
+  //TODO: here, the ' minutes' ' days' are hardcoded, look to simplify the logic
   getButtonValues(card: Flashcard): {
     easy: string;
     good: string;

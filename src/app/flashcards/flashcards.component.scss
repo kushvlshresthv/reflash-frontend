@@ -1,0 +1,248 @@
+@use 'colors' as colors;
+@use 'constants' as constants;
+
+.available-screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 40px;
+}
+
+.available-screen:has(.loader) {
+  align-items: center;
+  padding-top: 0;
+}
+
+// ── Session Complete ──────────────────────────────────────────────────
+
+.session-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 80px;
+
+  .session-complete-icon {
+    font-size: 3rem;
+  }
+
+  h2 {
+    font-size: constants.$font-xxl;
+    font-weight: constants.$font-weight-semibold;
+    color: colors.$color-font-primary;
+    margin: 0;
+  }
+
+  p {
+    font-size: constants.$font-large;
+    color: colors.$color-font-muted;
+    margin: 0;
+  }
+}
+
+// ── Flashcard Container ───────────────────────────────────────────────
+
+.flashcard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 650px;
+  gap: 24px;
+}
+
+// ── Deck Info ─────────────────────────────────────────────────────────
+
+.deck-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  .deck-name {
+    font-size: constants.$font-xl;
+    font-weight: constants.$font-weight-semibold;
+    color: colors.$color-font-primary;
+  }
+
+  .course-name {
+    font-size: constants.$font-small;
+    color: colors.$color-font-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+// ── Card ──────────────────────────────────────────────────────────────
+
+.card {
+  width: 100%;
+  background: colors.$color-background-card;
+  border: 1px solid colors.$color-border-primary;
+  border-radius: 8px;
+  padding: 32px 24px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card-front {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-divider {
+  width: 100%;
+  height: 1px;
+  background: colors.$color-border-primary;
+  margin: 24px 0;
+}
+
+.card-back {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-text {
+  font-size: constants.$font-xl;
+  color: colors.$color-font-primary;
+  text-align: center;
+  margin: 0;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+// ── Additional Context ────────────────────────────────────────────────
+
+.additional-context-toggle {
+  text-align: center;
+  margin-top: 16px;
+  font-size: constants.$font-small;
+  color: colors.$color-font-muted;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    color: colors.$color-font-primary;
+  }
+}
+
+.additional-context {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: colors.$color-background-secondary;
+  border-radius: 6px;
+  border: 1px solid colors.$color-border-primary;
+
+  p {
+    margin: 0;
+    font-size: constants.$font-medium;
+    color: colors.$color-font-secondary;
+    text-align: center;
+    line-height: 1.5;
+  }
+}
+
+// ── Action Buttons ────────────────────────────────────────────────────
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 24px;
+  font-size: constants.$font-medium;
+  font-weight: constants.$font-weight-semibold;
+  transition: all 0.15s ease;
+  min-width: 90px;
+
+  .btn-label {
+    display: block;
+  }
+}
+
+.btn-show-answer {
+  background: colors.$color-button-primary;
+  color: white;
+  padding: 14px 48px;
+  font-size: constants.$font-large;
+
+  &:hover {
+    background: colors.$color-button-primary-hover;
+  }
+
+  &:active {
+    background: colors.$color-button-primary-active;
+  }
+}
+
+.btn-again {
+  background: #d32f2f;
+  color: white;
+
+  &:hover {
+    background: #b71c1c;
+  }
+}
+
+.btn-hard {
+  background: #e68a00;
+  color: white;
+
+  &:hover {
+    background: #cc7a00;
+  }
+}
+
+.btn-good {
+  background: #2e7d32;
+  color: white;
+
+  &:hover {
+    background: #1b5e20;
+  }
+}
+
+.btn-easy {
+  background: #1565c0;
+  color: white;
+
+  &:hover {
+    background: #0d47a1;
+  }
+}
+
+// ── Responsive ────────────────────────────────────────────────────────
+
+@media (max-width: 768px) {
+  .flashcard-container {
+    max-width: 100%;
+    padding: 0 12px;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    flex: 1;
+    min-width: 70px;
+    padding: 10px 12px;
+  }
+
+  .btn-show-answer {
+    flex: none;
+    width: 100%;
+  }
+}

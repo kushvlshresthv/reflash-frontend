@@ -1,0 +1,68 @@
+<div class="available-screen">
+  @if (!deckLoaded) {
+    <span class="loader"></span>
+  } @else if (sessionComplete) {
+    <div class="session-complete">
+      <div class="session-complete-icon">🎉</div>
+      <h2>Congratulations!</h2>
+      <p>You have finished this deck for now.</p>
+    </div>
+  } @else if (currentCard) {
+    <div class="flashcard-container">
+      <div class="deck-info">
+        <span class="deck-name">{{ deck!.deckName }}</span>
+        <span class="course-name">{{ deck!.courseName }}</span>
+      </div>
+
+      <div class="card">
+        <div class="card-front">
+          <p class="card-text">{{ currentCard.note.front }}</p>
+        </div>
+
+        @if (showAnswer) {
+          <div class="card-divider"></div>
+          <div class="card-back">
+            <p class="card-text">{{ currentCard.note.back }}</p>
+          </div>
+
+          @if (currentCard.note.additionalContext) {
+            <div class="additional-context-toggle" (click)="toggleAdditionalContext()">
+              @if (showAdditionalContext) {
+                Hide Context ▲
+              } @else {
+                Show Context ▼
+              }
+            </div>
+
+            @if (showAdditionalContext) {
+              <div class="additional-context">
+                <p>{{ currentCard.note.additionalContext }}</p>
+              </div>
+            }
+          }
+        }
+      </div>
+
+      @if (!showAnswer) {
+        <div class="action-buttons">
+          <button class="btn btn-show-answer" (click)="revealAnswer()">Show Answer</button>
+        </div>
+      } @else {
+        <div class="action-buttons">
+          <button class="btn btn-again" (click)="answerCard(1)">
+            <span class="btn-label">Again ({{currentButtonValues!.again}})</span>
+          </button>
+          <button class="btn btn-hard" (click)="answerCard(2)">
+            <span class="btn-label">Hard ({{currentButtonValues!.hard}})</span>
+          </button>
+          <button class="btn btn-good" (click)="answerCard(3)">
+            <span class="btn-label">Good ({{currentButtonValues!.good}})</span>
+          </button>
+          <button class="btn btn-easy" (click)="answerCard(4)">
+            <span class="btn-label">Easy ({{currentButtonValues!.easy}})</span>
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>
