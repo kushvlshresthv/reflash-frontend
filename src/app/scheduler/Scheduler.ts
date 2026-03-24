@@ -1291,80 +1291,82 @@ class Scheduler {
 
   //get the button values
   //TODO: here, the ' minutes' ' days' are hardcoded, look to simplify the logic
+  private formatMinutes(value: number): string {
+    return `${value} ${value === 1 ? 'minute' : 'minutes'}`;
+  }
+
+  private formatDays(value: number): string {
+    return `${value} ${value === 1 ? 'day' : 'days'}`;
+  }
+
   getButtonValues(card: Flashcard): {
     easy: string;
     good: string;
     hard: string;
     again: string;
   } {
-    let hardStep = '';
-    let goodStep = '';
-    let easyStep = '';
-    let againStep = '';
     switch (card.type) {
       case 'NEW':
-        easyStep = '4 day';
-        goodStep = '10 minutes';
-        hardStep = '6 minutes';
-        againStep = '1 minute';
-        break;
+        return {
+          easy: this.formatDays(4),
+          good: this.formatMinutes(10),
+          hard: this.formatMinutes(6),
+          again: this.formatMinutes(1),
+        };
 
-      case 'LEARNING':
-        againStep = this.lrnConf(card)[0] + ' minutes';
-        easyStep = '4 days'; //easy step is always 4
+      case 'LEARNING': {
+        const firstLrnStep = this.lrnConf(card)[0];
+        const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
 
         //NOTE: cards start at conf.length and the last step is '1'
         if (card.left == 1) {
           //since this is the last step left, the next step will be graduation
-          const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
           //there is no next step
           const nextStep = currentStep;
+          const hardStepMinutes =
+            Math.floor((currentStep + Math.max(currentStep, nextStep)) / 2) / 60;
 
-          //since this is the last step
-          goodStep = Scheduler.GRADUATING_IVL + ' days';
-          hardStep =
-            Math.floor((currentStep + Math.max(currentStep, nextStep)) / 2) / 60 + ' minutes';
-          againStep = this.lrnConf(card)[0] + ' minute';
-          easyStep = '4 days';
-        } else if (card.left == 2) {
-          const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
+          return {
+            easy: this.formatDays(4), //easy step is always 4
+            good: this.formatDays(Scheduler.GRADUATING_IVL), //since this is the last step
+            hard: this.formatMinutes(hardStepMinutes),
+            again: this.formatMinutes(firstLrnStep),
+          };
+        } else {
+          // card.left >= 2: there are more steps remaining
           const nextStep = this.delayForGrade(this.lrnConf(card), card.left - 1);
+          const hardStepMinutes = Math.ceil(
+            (currentStep + Math.max(currentStep, nextStep)) / 2 / 60,
+          );
 
-          goodStep = nextStep / 60 + ' minutes';
-          hardStep =
-            Math.ceil((currentStep + Math.max(currentStep, nextStep)) / 2 / 60) + ' minutes';
-          againStep = this.lrnConf(card)[0] + ' minute';
-          easyStep = '4 days';
+          return {
+            easy: this.formatDays(4), //easy step is always 4
+            good: this.formatMinutes(nextStep / 60),
+            hard: this.formatMinutes(hardStepMinutes),
+            again: this.formatMinutes(firstLrnStep),
+          };
         }
-        break;
+      }
 
       case 'RELEARNING':
-        againStep = this.lrnConf(card)[0] + ' minutes';
-        hardStep = '15 minutes'; //NOTE: a hard-coded value for hard step in relearning cards(hard coded in delayForRepeatingGrade, read the NOTE in the method)
-        goodStep = card.ivl + ' day';
-
-        //NOTE: a hardcoded value for easy step in relearing cards(hardcoded in rescheduleAsRev, read the NOTE there)
-        easyStep = '2 days';
-        break;
+        return {
+          easy: this.formatDays(2), //NOTE: a hardcoded value for easy step in relearing cards(hardcoded in rescheduleAsRev, read the NOTE there)
+          good: this.formatDays(card.ivl),
+          hard: this.formatMinutes(15), //NOTE: a hard-coded value for hard step in relearning cards(hard coded in delayForRepeatingGrade, read the NOTE in the method)
+          again: this.formatMinutes(this.lrnConf(card)[0]),
+        };
 
       case 'REVIEW':
-        hardStep = this.nextRevIvl(card, 2) + ' days';
-        goodStep = this.nextRevIvl(card, 3) + ' days';
-        easyStep = this.nextRevIvl(card, 4) + ' days';
-        againStep = this.lrnConf(card)[0] + ' minutes';
-
-        break;
+        return {
+          easy: this.formatDays(this.nextRevIvl(card, 4)),
+          good: this.formatDays(this.nextRevIvl(card, 3)),
+          hard: this.formatDays(this.nextRevIvl(card, 2)),
+          again: this.formatMinutes(this.lrnConf(card)[0]),
+        };
 
       default:
         throw new Error(`Unexpected card queue: ${card.queue}`);
     }
-
-    return {
-      easy: easyStep,
-      good: goodStep,
-      hard: hardStep,
-      again: againStep,
-    };
   }
 
   /**
