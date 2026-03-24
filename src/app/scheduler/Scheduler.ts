@@ -189,11 +189,11 @@ class Scheduler {
     const limit = Scheduler.NEW_CARDS_PER_DAY;
 
     // Filter: only cards sitting in the NEW queue (queue == 0).
-    // Sort:   by due (for the new cards, due date = note.crt, set by the backend)
+    // Sort:   by due (for the new cards, due date = note.crt, set by the backend ie show the newest cards first)
     // Limit:  take at most `limit` cards.
     this.newQueue = this.deck.flashcards
       .filter((card) => card.queue === 'NEW')
-      .sort((a, b) => b.due - a.due)
+      .sort((a, b) => a.due - b.due)
       .slice(0, limit);
 
     return this.newQueue.length > 0;
@@ -859,7 +859,7 @@ class Scheduler {
     }
     // Average of current delay and the larger of the two.
     // This ensures the result is always >= delay1.
-    const delaySeconds = delay1 + Math.max(delay1, delay2) / 2;
+    const delaySeconds = (delay1 + Math.max(delay1, delay2)) / 2;
     //doing this because we want to apply ceiling on minute, not seconds
     const delayMinute = Math.ceil(delaySeconds / 60);
     return delayMinute * 60;
