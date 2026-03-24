@@ -26,6 +26,11 @@ export class FlashcardsComponent {
     hard: string;
     again: string;
   } | null = null;
+  queueCounts: { newCount: number; learnCount: number; reviewCount: number } = {
+    newCount: 0,
+    learnCount: 0,
+    reviewCount: 0,
+  };
 
   constructor(
     private httpClient: HttpClient,
@@ -48,7 +53,7 @@ export class FlashcardsComponent {
         next: (response) => {
           this.deck = response.mainBody;
           this.deckLoaded = true;
-          this.scheduler = new Scheduler(this.deck);
+          this.scheduler = new Scheduler(this.httpClient, this.deck);
           this.nextCard();
         },
       });
@@ -58,6 +63,7 @@ export class FlashcardsComponent {
     if (!this.scheduler) return;
     this.currentCard = this.scheduler.getCard();
     this.currentButtonValues = this.scheduler.getButtonValues(this.currentCard as Flashcard);
+    this.queueCounts = this.scheduler.getQueueCounts();
     this.showAnswer = false;
     this.showAdditionalContext = false;
     if (this.currentCard === null) {

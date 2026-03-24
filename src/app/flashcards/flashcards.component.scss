@@ -1,18 +1,20 @@
-@use 'colors' as colors;
-@use 'constants' as constants;
+// Anki-style flashcard review - Dark theme
+@use '../../styles/colors' as *;
 
-.available-screen {
+.review-screen {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 40px;
+  flex-direction: column;
+  background: $color-background-primary;
+  color: $color-font-primary;
 }
 
-.available-screen:has(.loader) {
+
+.review-screen:has(.loader) {
+  justify-content: center;
   align-items: center;
-  padding-top: 0;
 }
 
 // ── Session Complete ──────────────────────────────────────────────────
@@ -21,228 +23,262 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-top: 80px;
-
-  .session-complete-icon {
-    font-size: 3rem;
-  }
+  justify-content: center;
+  flex: 1;
+  text-align: center;
 
   h2 {
-    font-size: constants.$font-xxl;
-    font-weight: constants.$font-weight-semibold;
-    color: colors.$color-font-primary;
-    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: $color-font-primary;
+    margin: 0 0 8px 0;
   }
 
   p {
-    font-size: constants.$font-large;
-    color: colors.$color-font-muted;
+    font-size: 16px;
+    color: $color-font-muted;
     margin: 0;
   }
 }
 
-// ── Flashcard Container ───────────────────────────────────────────────
+// ── Deck Header ───────────────────────────────────────────────────────
 
-.flashcard-container {
+.deck-header {
+  padding: 8px 16px;
+  text-align: center;
+  background: $color-background-primary;
+  border-bottom: 1px solid $color-border-primary;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.queue-counts {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 16px;
+  font-weight: 600;
+
+  span {
+    color: $color-font-muted;
+  }
+
+  .new-count {
+    color: #5b9bd5;
+  }
+  .learn-count {
+    color: #c9302c;
+  }
+  .review-count {
+    color: #5cb85c;
+  }
+}
+
+// ── Card Area ─────────────────────────────────────────────────────────
+
+.card-area {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
-  max-width: 650px;
-  gap: 24px;
+  padding: 24px;
+  overflow-y: auto;
 }
 
-// ── Deck Info ─────────────────────────────────────────────────────────
+.card-content {
+  width: 100%;
+  max-width: 900px;
+  text-align: center;
+}
 
-.deck-info {
+.question {
+  font-size: 20px;
+  line-height: 1.6;
+  color: $color-font-primary;
+  word-break: break-word;
+}
+
+.answer {
+  font-size: 18px;
+  line-height: 1.7;
+  color: $color-font-secondary;
+  word-break: break-word;
+  text-align: center;
+}
+
+.answer-divider {
+  border: none;
+  border-top: 1px solid $color-border-primary;
+  margin: 24px 0;
+}
+
+// ── Additional Context Info Icon ──────────────────────────────────────
+
+.context-info {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.info-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: $color-font-muted;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    opacity: 1;
+    color: $color-font-secondary;
+  }
+
+  &.active {
+    opacity: 1;
+    color: $color-button-primary;
+  }
+}
+
+.context-popup {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: $color-background-secondary;
+  border: 1px solid $color-border-primary;
+  border-radius: 6px;
+  font-size: 14px;
+  color: $color-font-secondary;
+  line-height: 1.5;
+  text-align: left;
+  max-width: 600px;
+}
+
+// ── Button Area ───────────────────────────────────────────────────────
+
+.button-area {
+  position: absolute;
+  left:0;
+  bottom: 0;
+  padding: 12px 16px 16px;
+  background: $color-background-primary;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.show-answer-btn {
+  padding: 8px 48px;
+  font-size: 15px;
+  font-weight: 500;
+  color: $color-font-primary;
+  background: $color-background-secondary;
+  border: 1px solid $color-border-primary;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: $color-hover;
+  }
+
+  &:active {
+    background: $color-background-secondary;
+  }
+}
+
+// ── Rating Buttons ────────────────────────────────────────────────────
+
+.rating-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.rating-btn-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-
-  .deck-name {
-    font-size: constants.$font-xl;
-    font-weight: constants.$font-weight-semibold;
-    color: colors.$color-font-primary;
-  }
-
-  .course-name {
-    font-size: constants.$font-small;
-    color: colors.$color-font-muted;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
 }
 
-// ── Card ──────────────────────────────────────────────────────────────
-
-.card {
-  width: 100%;
-  background: colors.$color-background-card;
-  border: 1px solid colors.$color-border-primary;
-  border-radius: 8px;
-  padding: 32px 24px;
-  min-height: 200px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.interval {
+  font-size: 12px;
+  color: $font-primary-color;
 }
 
-.card-front {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.card-divider {
-  width: 100%;
-  height: 1px;
-  background: colors.$color-border-primary;
-  margin: 24px 0;
-}
-
-.card-back {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.card-text {
-  font-size: constants.$font-xl;
-  color: colors.$color-font-primary;
-  text-align: center;
-  margin: 0;
-  line-height: 1.6;
-  word-break: break-word;
-}
-
-// ── Additional Context ────────────────────────────────────────────────
-
-.additional-context-toggle {
-  text-align: center;
-  margin-top: 16px;
-  font-size: constants.$font-small;
-  color: colors.$color-font-muted;
-  cursor: pointer;
-  user-select: none;
-
-  &:hover {
-    color: colors.$color-font-primary;
-  }
-}
-
-.additional-context {
-  margin-top: 12px;
-  padding: 12px 16px;
-  background: colors.$color-background-secondary;
-  border-radius: 6px;
-  border: 1px solid colors.$color-border-primary;
-
-  p {
-    margin: 0;
-    font-size: constants.$font-medium;
-    color: colors.$color-font-secondary;
-    text-align: center;
-    line-height: 1.5;
-  }
-}
-
-// ── Action Buttons ────────────────────────────────────────────────────
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-  justify-content: center;
-}
-
-.btn {
-  cursor: pointer;
+.rating-btn {
+  min-width: 70px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 500;
   border: none;
-  border-radius: 6px;
-  padding: 12px 24px;
-  font-size: constants.$font-medium;
-  font-weight: constants.$font-weight-semibold;
-  transition: all 0.15s ease;
-  min-width: 90px;
-
-  .btn-label {
-    display: block;
-  }
-}
-
-.btn-show-answer {
-  background: colors.$color-button-primary;
-  color: white;
-  padding: 14px 48px;
-  font-size: constants.$font-large;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.1s ease;
 
   &:hover {
-    background: colors.$color-button-primary-hover;
+    filter: brightness(1.15);
   }
 
   &:active {
-    background: colors.$color-button-primary-active;
+    filter: brightness(0.9);
   }
 }
 
-.btn-again {
-  background: #d32f2f;
-  color: white;
-
-  &:hover {
-    background: #b71c1c;
-  }
+.rating-btn.again {
+  background: #c9302c;
+  color: #fff;
 }
 
-.btn-hard {
-  background: #e68a00;
-  color: white;
-
-  &:hover {
-    background: #cc7a00;
-  }
+.rating-btn.hard {
+  background: $color-background-secondary;
+  color: $color-font-primary;
 }
 
-.btn-good {
-  background: #2e7d32;
-  color: white;
-
-  &:hover {
-    background: #1b5e20;
-  }
+.rating-btn.good {
+  background: #5cb85c;
+  color: #fff;
 }
 
-.btn-easy {
-  background: #1565c0;
-  color: white;
-
-  &:hover {
-    background: #0d47a1;
-  }
+.rating-btn.easy {
+  background: #5b9bd5;
+  color: #fff;
 }
 
 // ── Responsive ────────────────────────────────────────────────────────
 
-@media (max-width: 768px) {
-  .flashcard-container {
-    max-width: 100%;
-    padding: 0 12px;
+@media (max-width: 600px) {
+  .card-area {
+    padding: 24px 16px;
   }
 
-  .action-buttons {
-    flex-wrap: wrap;
+  .question {
+    font-size: 18px;
   }
 
-  .btn {
-    flex: 1;
-    min-width: 70px;
-    padding: 10px 12px;
+  .answer {
+    font-size: 16px;
   }
 
-  .btn-show-answer {
-    flex: none;
-    width: 100%;
+  .rating-buttons {
+    gap: 4px;
+  }
+
+  .rating-btn {
+    min-width: 58px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .show-answer-btn {
+    padding: 8px 32px;
   }
 }

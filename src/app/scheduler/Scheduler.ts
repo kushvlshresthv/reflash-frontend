@@ -1,5 +1,8 @@
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Deck, Flashcard } from '../models/models';
 import seedrandom from 'seedrandom';
+import { BACKEND_URL } from '../utils/global_constants';
+import { ApiResponse } from '../utils/api_response';
 
 class Scheduler {
   //initialized by the constructor
@@ -95,7 +98,11 @@ class Scheduler {
   //Determines how often a new card is inserted between review and learning cards
   private newCardModulus = 0;
 
-  constructor(deck: Deck, reps: number = 0) {
+  constructor(
+    private httpClient: HttpClient,
+    deck: Deck,
+    reps: number = 0,
+  ) {
     console.log(deck);
     this.deck = deck;
     this.reps = reps;
@@ -248,7 +255,7 @@ class Scheduler {
 
     // How far into the future we're willing to look for learning cards.
     let cutoff: number;
-    if(lookAhead) {
+    if (lookAhead) {
       this.resetLrn();
       cutoff = this.lrnCutoff;
     } else {
@@ -319,6 +326,26 @@ class Scheduler {
     return false;
   }
 
+  checkForDirtyCardsSubmission() {
+    const requestParams = new HttpParams().set('deckId', this.deck.deckId);
+    if (this.dirtyCards.length > 3) {
+      console.log('DEBUG(need to submit the cards now): reps' + this.reps);
+
+      this.httpClient
+        .put<ApiResponse<Object>>(BACKEND_URL + '/api/student/flashcards', this.dirtyCards, {
+          withCredentials: true,
+          params: requestParams,
+        })
+        .subscribe({
+          next: (response) => {
+            console.log(response);
+          },
+        });
+
+      this.dirtyCards.length = 0;
+    }
+  }
+
   // =====================================================================
   //  CARD RETRIEVAL — public API
   // =====================================================================
@@ -332,10 +359,7 @@ class Scheduler {
    * Mirrors Anki's Scheduler.getCard().
    */
   public getCard(): Flashcard | null {
-    if (this.dirtyCards.length > 3) {
-      console.log('DEBUG(returning new card): reps' + this.reps);
-      console.log(this.dirtyCards);
-    }
+    this.checkForDirtyCardsSubmission();
     const card = this.getCardInternal();
     if (card !== null) {
       // Increment the session counter.  This is used by
@@ -552,10 +576,10 @@ class Scheduler {
   private answerNewCard(card: Flashcard, ease: number): void {
     // Move from the NEW queue → LEARNING queue.
     card.queue = 'LEARNING';
-    console.log(`DEBUG: card queue set to ${card.queue}` )
+    console.log(`DEBUG: card queue set to ${card.queue}`);
 
     card.type = 'LEARNING';
-    console.log(`DEBUG: card type set to ${card.type}` )
+    console.log(`DEBUG: card type set to ${card.type}`);
 
     // Initialise the learning-steps counter.
     // This tells the scheduler how many steps are left before
@@ -690,7 +714,7 @@ class Scheduler {
    */
   private updateRevIvlOnFail(card: Flashcard): void {
     card.ivl = this.lapseIvl(card);
-    console.log(`DEBUG: ivl value set to ${card.ivl} days` )
+    console.log(`DEBUG: ivl value set to ${card.ivl} days`);
   }
 
   /**
@@ -731,11 +755,11 @@ class Scheduler {
 
     // Set due = now + delay (epoch seconds).
     card.due = Math.floor(Date.now() / 1000) + delay!;
-    console.log(`DEBUG: due value ${delay} seconds from now` )
+    console.log(`DEBUG: due value ${delay} seconds from now`);
 
     // Keep (or move) the card in the learning queue.
     card.queue = 'LEARNING';
-    console.log(`DEBUG: card queue set to ${card.queue}` )
+    console.log(`DEBUG: card queue set to ${card.queue}`);
 
     return delay;
   }
@@ -823,7 +847,7 @@ class Scheduler {
 
     //TODO: read below
     //NOTE: improvisation for relearning cards, where the again button causes 15 minute delay. Following logic, we will get a delay of 10 minnute, but the 'again' button aeready provides a delay of 10 minute
-    if(card.type === "RELEARNING") {
+    if (card.type === 'RELEARNING') {
       return 15 * 60;
     }
 
@@ -837,7 +861,7 @@ class Scheduler {
     // This ensures the result is always >= delay1.
     const delaySeconds = delay1 + Math.max(delay1, delay2) / 2;
     //doing this because we want to apply ceiling on minute, not seconds
-    const delayMinute = Math.ceil(delaySeconds/60);
+    const delayMinute = Math.ceil(delaySeconds / 60);
     return delayMinute * 60;
   }
 
@@ -870,7 +894,7 @@ class Scheduler {
       //NOTE: here, in relearning cards, the good option already has today + card.ivl( ie1 day) for the next due date
       //NOTE: hence, changing the due date for 'easy' option to 2 days
       card.ivl = 2;
-      console.log(`DEBUG: ivl value set to ${card.ivl} days` )
+      console.log(`DEBUG: ivl value set to ${card.ivl} days`);
 
       this.rescheduleGraduatingLapse(card);
     } else {
@@ -890,13 +914,13 @@ class Scheduler {
   private rescheduleGraduatingLapse(card: Flashcard): void {
     // due for review cards = day offset relative to collection creation.
     card.due = this.today + card.ivl;
-    console.log(`DEBUG: due value ${card.ivl} days from today` )
+    console.log(`DEBUG: due value ${card.ivl} days from today`);
 
     card.type = 'REVIEW';
-    console.log(`DEBUG: card type set to ${card.type}` )
+    console.log(`DEBUG: card type set to ${card.type}`);
 
     card.queue = 'REVIEW';
-    console.log(`DEBUG: card queue set to ${card.queue}` )
+    console.log(`DEBUG: card queue set to ${card.queue}`);
   }
 
   /**
@@ -913,19 +937,17 @@ class Scheduler {
    */
   private rescheduleNew(card: Flashcard, conf: number[], early: boolean): void {
     card.ivl = this.graduatingIvl(card, conf, early);
-    console.log(`DEBUG: ivl value set to ${card.ivl} days` )
-
+    console.log(`DEBUG: ivl value set to ${card.ivl} days`);
 
     card.due = this.today + card.ivl;
-    console.log(`DEBUG: due value ${card.ivl} days from today` )
+    console.log(`DEBUG: due value ${card.ivl} days from today`);
 
     card.factor = Scheduler.INITIAL_FACTOR;
     card.type = 'REVIEW';
-    console.log(`DEBUG: card type set to ${card.type}` )
-
+    console.log(`DEBUG: card type set to ${card.type}`);
 
     card.queue = 'REVIEW';
-    console.log(`DEBUG: card queue set to ${card.queue}` )
+    console.log(`DEBUG: card queue set to ${card.queue}`);
   }
 
   /**
@@ -1014,7 +1036,7 @@ class Scheduler {
       //     Keep type = REVIEW so that lrnConf() returns LAPSE_STEPS
       //     and rescheduleAsRev() knows this is a lapse (not a new card).
       card.type = 'RELEARNING';
-      console.log(`DEBUG: card type set to ${card.type}` )
+      console.log(`DEBUG: card type set to ${card.type}`);
 
       this.moveToFirstStep(card, Scheduler.LAPSE_STEPS);
     } else {
@@ -1049,7 +1071,7 @@ class Scheduler {
       }
       // Suspend the card — it will no longer appear in any queue.
       card.queue = 'SUSPENDED';
-      console.log(`DEBUG: card queue set to ${card.queue}` )
+      console.log(`DEBUG: card queue set to ${card.queue}`);
 
       return true;
     }
@@ -1085,16 +1107,14 @@ class Scheduler {
 
     // 3. Set the due date = today + new interval (day offset).
     card.due = this.today + card.ivl;
-    console.log(`DEBUG: due value ${card.ivl} days from now` )
-
-
+    console.log(`DEBUG: due value ${card.ivl} days from now`);
 
     // Keep the card in the review queue.
     card.type = 'REVIEW';
-    console.log(`DEBUG: card type set to ${card.type}` )
+    console.log(`DEBUG: card type set to ${card.type}`);
 
     card.queue = 'REVIEW';
-    console.log(`DEBUG: card queue set to ${card.queue}` )
+    console.log(`DEBUG: card queue set to ${card.queue}`);
   }
 
   /**
@@ -1102,7 +1122,7 @@ class Scheduler {
    */
   private updateRevIvl(card: Flashcard, ease: number): void {
     card.ivl = this.nextRevIvl(card, ease);
-    console.log(`DEBUG: ivl value set to ${card.ivl} days` )
+    console.log(`DEBUG: ivl value set to ${card.ivl} days`);
   }
 
   // =====================================================================
@@ -1269,7 +1289,6 @@ class Scheduler {
     return [ivl - fuzz, ivl + fuzz];
   }
 
-
   //get the button values
   //TODO: here, the ' minutes' ' days' are hardcoded, look to simplify the logic
   getButtonValues(card: Flashcard): {
@@ -1278,9 +1297,9 @@ class Scheduler {
     hard: string;
     again: string;
   } {
-    let hardStep = '' ;
-    let goodStep = '' ;
-    let easyStep = '' ;
+    let hardStep = '';
+    let goodStep = '';
+    let easyStep = '';
     let againStep = '';
     switch (card.type) {
       case 'NEW':
@@ -1303,18 +1322,19 @@ class Scheduler {
 
           //since this is the last step
           goodStep = Scheduler.GRADUATING_IVL + ' days';
-          hardStep = Math.floor((currentStep + Math.max(currentStep, nextStep)) / 2)/60 + ' minutes';
-          againStep = this.lrnConf(card)[0]+ ' minute';
-          easyStep = '4 days'
-
+          hardStep =
+            Math.floor((currentStep + Math.max(currentStep, nextStep)) / 2) / 60 + ' minutes';
+          againStep = this.lrnConf(card)[0] + ' minute';
+          easyStep = '4 days';
         } else if (card.left == 2) {
           const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
           const nextStep = this.delayForGrade(this.lrnConf(card), card.left - 1);
 
-          goodStep = nextStep/60 + ' minutes';
-          hardStep = Math.ceil((currentStep + Math.max(currentStep, nextStep)) / 2/60) + ' minutes';
+          goodStep = nextStep / 60 + ' minutes';
+          hardStep =
+            Math.ceil((currentStep + Math.max(currentStep, nextStep)) / 2 / 60) + ' minutes';
           againStep = this.lrnConf(card)[0] + ' minute';
-          easyStep = '4 days'
+          easyStep = '4 days';
         }
         break;
 
@@ -1344,6 +1364,18 @@ class Scheduler {
       good: goodStep,
       hard: hardStep,
       again: againStep,
+    };
+  }
+
+  /**
+   * Returns the current counts for each queue.
+   * Used to display Anki-style queue counts (new + learning + review).
+   */
+  getQueueCounts(): { newCount: number; learnCount: number; reviewCount: number } {
+    return {
+      newCount: this.newQueue.length,
+      learnCount: this.lrnQueue.length,
+      reviewCount: this.revQueue.length,
     };
   }
 }

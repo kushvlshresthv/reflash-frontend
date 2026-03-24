@@ -1,66 +1,67 @@
-<div class="available-screen">
+<div class="review-screen">
   @if (!deckLoaded) {
     <span class="loader"></span>
   } @else if (sessionComplete) {
     <div class="session-complete">
-      <div class="session-complete-icon">🎉</div>
       <h2>Congratulations!</h2>
       <p>You have finished this deck for now.</p>
     </div>
   } @else if (currentCard) {
-    <div class="flashcard-container">
-      <div class="deck-info">
-        <span class="deck-name">{{ deck!.deckName }}</span>
-        <span class="course-name">{{ deck!.courseName }}</span>
-      </div>
-
-      <div class="card">
-        <div class="card-front">
-          <p class="card-text">{{ currentCard.note.front }}</p>
-        </div>
+    <!-- <div class="deck-header">
+         <span class="queue-counts">
+         <span class="new-count">{{ queueCounts.newCount }}</span>
+         <span>+</span>
+         <span class="learn-count">{{ queueCounts.learnCount }}</span>
+         <span>+</span>
+         <span class="review-count">{{ queueCounts.reviewCount }}</span>
+         </span>
+         </div>
+    -->
+    <div class="card-area">
+      <div class="card-content">
+        <div class="question">{{ currentCard.note.front }}</div>
 
         @if (showAnswer) {
-          <div class="card-divider"></div>
-          <div class="card-back">
-            <p class="card-text">{{ currentCard.note.back }}</p>
-          </div>
+          <hr class="answer-divider" />
+          <div class="answer">{{ currentCard.note.back }}</div>
 
           @if (currentCard.note.additionalContext) {
-            <div class="additional-context-toggle" (click)="toggleAdditionalContext()">
+            <div class="context-info">
+              <button class="info-icon" (click)="toggleAdditionalContext()" [class.active]="showAdditionalContext" title="Additional Context">
+                ⓘ
+              </button>
               @if (showAdditionalContext) {
-                Hide Context ▲
-              } @else {
-                Show Context ▼
+                <div class="context-popup">
+                  {{ currentCard.note.additionalContext }}
+                </div>
               }
             </div>
-
-            @if (showAdditionalContext) {
-              <div class="additional-context">
-                <p>{{ currentCard.note.additionalContext }}</p>
-              </div>
-            }
           }
         }
       </div>
+    </div>
 
+    <div class="button-area">
       @if (!showAnswer) {
-        <div class="action-buttons">
-          <button class="btn btn-show-answer" (click)="revealAnswer()">Show Answer</button>
-        </div>
+        <button class="show-answer-btn" (click)="revealAnswer()">Show Answer</button>
       } @else {
-        <div class="action-buttons">
-          <button class="btn btn-again" (click)="answerCard(1)">
-            <span class="btn-label">Again ({{currentButtonValues!.again}})</span>
-          </button>
-          <button class="btn btn-hard" (click)="answerCard(2)">
-            <span class="btn-label">Hard ({{currentButtonValues!.hard}})</span>
-          </button>
-          <button class="btn btn-good" (click)="answerCard(3)">
-            <span class="btn-label">Good ({{currentButtonValues!.good}})</span>
-          </button>
-          <button class="btn btn-easy" (click)="answerCard(4)">
-            <span class="btn-label">Easy ({{currentButtonValues!.easy}})</span>
-          </button>
+        <div class="rating-buttons">
+          <div class="rating-btn-wrapper">
+            <span class="interval">{{ currentButtonValues!.again }}</span>
+            <button class="rating-btn again" (click)="answerCard(1)">Again</button>
+          </div>
+          <div class="rating-btn-wrapper">
+            <span class="interval">{{ currentButtonValues!.hard }}</span>
+            <button class="rating-btn hard" (click)="answerCard(2)">Hard</button>
+          </div>
+          <div class="rating-btn-wrapper">
+            <span class="interval">{{ currentButtonValues!.good }}</span>
+            <button class="rating-btn good" (click)="answerCard(3)">Good</button>
+          </div>
+          <div class="rating-btn-wrapper">
+            <span class="interval">{{ currentButtonValues!.easy }}</span>
+            <button class="rating-btn easy" (click)="answerCard(4)">Easy</button>
+          </div>
         </div>
       }
     </div>

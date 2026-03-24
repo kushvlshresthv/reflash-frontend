@@ -10,7 +10,7 @@ export interface Popup {
 //for scheduler:
 
 export interface Deck {
-  id: number;
+  deckId: number;
   courseName: string;
   deckName: string;
   flashcards: Flashcard[];

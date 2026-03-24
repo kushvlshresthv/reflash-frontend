@@ -6,6 +6,8 @@
   height: calc(100vh - constants.$header-height);
   overflow: auto;
   scrollbar-gutter: stable;
+  display: flex;
+  justify-items: stretch;
 }
 
 app-left-sidebar {
@@ -21,6 +23,9 @@ app-right-sidebar {
   margin-right: constants.$right-sidebar-width;
   padding: 20px;
   // border: 2px solid red;
+  // height: 95%;
+  flex-grow: 1;
+  margin-bottom: 20px;
 }
 
 //if login, hide the sidebars
