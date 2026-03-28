@@ -110,6 +110,9 @@ class Scheduler {
   //Determines how often a new card is inserted between review and learning cards
   private newCardModulus = 0;
 
+  //Timer for periodic dirty card submission (every 1 minute)
+  private submissionTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor(
     private httpClient: HttpClient,
     deck: Deck,
@@ -120,6 +123,23 @@ class Scheduler {
     this.reps = reps;
     this.today = this.daysSinceCreation();
     this.reset();
+    this.startPeriodicSubmission();
+  }
+
+  //Starts a timer to submit dirty cards every 1 minute
+  private startPeriodicSubmission(): void {
+    this.submissionTimer = setInterval(() => {
+      this.submitDirtyCards();
+    }, 60000); // 60000ms = 1 minute
+  }
+
+  //Stops the periodic submission timer
+  public destroy(): void {
+    if (this.submissionTimer !== null) {
+      clearInterval(this.submissionTimer);
+      this.submissionTimer = null;
+    }
+    this.submitDirtyCards(); // Submit any remaining dirty cards
   }
 
   /**
@@ -338,22 +358,28 @@ class Scheduler {
   }
 
   checkForDirtyCardsSubmission() {
-    const requestParams = new HttpParams().set('deckId', this.deck.deckId);
     if (this.dirtyCards.length > 3) {
-
-      this.httpClient
-        .put<ApiResponse<Object>>(BACKEND_URL + '/api/student/flashcards', this.dirtyCards, {
-          withCredentials: true,
-          params: requestParams,
-        })
-        .subscribe({
-          next: (response) => {
-            console.log(response);
-          },
-        });
-
-      this.dirtyCards.length = 0;
+      this.submitDirtyCards();
     }
+  }
+
+  //Submits all dirty cards to the backend (called by timer, deck empty, or threshold)
+  private submitDirtyCards(): void {
+    if (this.dirtyCards.length === 0) return;
+
+    const requestParams = new HttpParams().set('deckId', this.deck.deckId);
+    this.httpClient
+      .put<ApiResponse<Object>>(BACKEND_URL + '/api/student/flashcards', this.dirtyCards, {
+        withCredentials: true,
+        params: requestParams,
+      })
+      .subscribe({
+        next: (response) => {
+          console.log(response);
+        },
+      });
+
+    this.dirtyCards.length = 0;
   }
 
   // =====================================================================
@@ -377,7 +403,8 @@ class Scheduler {
       this.reps += 1;
       return card;
     }
-    // No cards left — study session is complete.
+    // No cards left — study session is complete, submit remaining dirty cards.
+    this.submitDirtyCards();
     return null;
   }
 
