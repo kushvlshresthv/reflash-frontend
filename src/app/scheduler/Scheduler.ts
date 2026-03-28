@@ -5,6 +5,18 @@ import { BACKEND_URL } from '../utils/global_constants';
 import { ApiResponse } from '../utils/api_response';
 
 class Scheduler {
+  delaysForCurrentCard: {
+    easy: string;
+    good: string;
+    hard: string;
+    again: string;
+  } = {
+    easy: '',
+    good: '',
+    hard: '',
+    again: '',
+  };
+
   //initialized by the constructor
   private deck: Deck;
 
@@ -125,7 +137,6 @@ class Scheduler {
 
     // 86400 seconds = 1 day
     const daysSinceCreation = Math.floor((nowSeconds - crt) / 86400);
-    console.log('DEBUG: daySinceCreationVariable = ' + daysSinceCreation);
     return daysSinceCreation;
   }
 
@@ -329,7 +340,6 @@ class Scheduler {
   checkForDirtyCardsSubmission() {
     const requestParams = new HttpParams().set('deckId', this.deck.deckId);
     if (this.dirtyCards.length > 3) {
-      console.log('DEBUG(need to submit the cards now): reps' + this.reps);
 
       this.httpClient
         .put<ApiResponse<Object>>(BACKEND_URL + '/api/student/flashcards', this.dirtyCards, {
@@ -367,7 +377,6 @@ class Scheduler {
       this.reps += 1;
       return card;
     }
-    console.log('DEBUG: session finished, comeback later');
     // No cards left — study session is complete.
     return null;
   }
@@ -529,6 +538,11 @@ class Scheduler {
     // Increment the card's total review count.
     card.reps = card.reps + 1;
 
+    console.log("BEFORE ANSWERING::: ");
+    console.log(card.type);
+    console.log(card.queue);
+    console.log(card.left);
+
     // Dispatch based on the card's current queue.
     switch (card.queue) {
       case 'NEW':
@@ -550,6 +564,16 @@ class Scheduler {
         throw new Error(`Unexpected card queue: ${card.queue}`);
     }
     this.markCardDirty(card);
+
+    console.log("BEFORE ANSWERING::: ");
+    console.log(card.type);
+    console.log(card.queue);
+    console.log(card.left);
+    if(card.type=='REVIEW') {
+      console.log("DUE IN: ", this.formatDays(card.due - this.today));
+    } else {
+      console.log("DUE IN: ", this.getDelayInMinutes(card.due));
+    }
   }
 
   // =====================================================================
@@ -576,10 +600,8 @@ class Scheduler {
   private answerNewCard(card: Flashcard, ease: number): void {
     // Move from the NEW queue → LEARNING queue.
     card.queue = 'LEARNING';
-    console.log(`DEBUG: card queue set to ${card.queue}`);
 
     card.type = 'LEARNING';
-    console.log(`DEBUG: card type set to ${card.type}`);
 
     // Initialise the learning-steps counter.
     // This tells the scheduler how many steps are left before
@@ -714,7 +736,6 @@ class Scheduler {
    */
   private updateRevIvlOnFail(card: Flashcard): void {
     card.ivl = this.lapseIvl(card);
-    console.log(`DEBUG: ivl value set to ${card.ivl} days`);
   }
 
   /**
@@ -755,11 +776,9 @@ class Scheduler {
 
     // Set due = now + delay (epoch seconds).
     card.due = Math.floor(Date.now() / 1000) + delay!;
-    console.log(`DEBUG: due value ${delay} seconds from now`);
 
     // Keep (or move) the card in the learning queue.
     card.queue = 'LEARNING';
-    console.log(`DEBUG: card queue set to ${card.queue}`);
 
     return delay;
   }
@@ -894,7 +913,6 @@ class Scheduler {
       //NOTE: here, in relearning cards, the good option already has today + card.ivl( ie1 day) for the next due date
       //NOTE: hence, changing the due date for 'easy' option to 2 days
       card.ivl = 2;
-      console.log(`DEBUG: ivl value set to ${card.ivl} days`);
 
       this.rescheduleGraduatingLapse(card);
     } else {
@@ -914,13 +932,10 @@ class Scheduler {
   private rescheduleGraduatingLapse(card: Flashcard): void {
     // due for review cards = day offset relative to collection creation.
     card.due = this.today + card.ivl;
-    console.log(`DEBUG: due value ${card.ivl} days from today`);
 
     card.type = 'REVIEW';
-    console.log(`DEBUG: card type set to ${card.type}`);
 
     card.queue = 'REVIEW';
-    console.log(`DEBUG: card queue set to ${card.queue}`);
   }
 
   /**
@@ -937,17 +952,13 @@ class Scheduler {
    */
   private rescheduleNew(card: Flashcard, conf: number[], early: boolean): void {
     card.ivl = this.graduatingIvl(card, conf, early);
-    console.log(`DEBUG: ivl value set to ${card.ivl} days`);
 
     card.due = this.today + card.ivl;
-    console.log(`DEBUG: due value ${card.ivl} days from today`);
 
     card.factor = Scheduler.INITIAL_FACTOR;
     card.type = 'REVIEW';
-    console.log(`DEBUG: card type set to ${card.type}`);
 
     card.queue = 'REVIEW';
-    console.log(`DEBUG: card queue set to ${card.queue}`);
   }
 
   /**
@@ -1036,7 +1047,6 @@ class Scheduler {
       //     Keep type = REVIEW so that lrnConf() returns LAPSE_STEPS
       //     and rescheduleAsRev() knows this is a lapse (not a new card).
       card.type = 'RELEARNING';
-      console.log(`DEBUG: card type set to ${card.type}`);
 
       this.moveToFirstStep(card, Scheduler.LAPSE_STEPS);
     } else {
@@ -1071,7 +1081,6 @@ class Scheduler {
       }
       // Suspend the card — it will no longer appear in any queue.
       card.queue = 'SUSPENDED';
-      console.log(`DEBUG: card queue set to ${card.queue}`);
 
       return true;
     }
@@ -1107,14 +1116,11 @@ class Scheduler {
 
     // 3. Set the due date = today + new interval (day offset).
     card.due = this.today + card.ivl;
-    console.log(`DEBUG: due value ${card.ivl} days from now`);
 
     // Keep the card in the review queue.
     card.type = 'REVIEW';
-    console.log(`DEBUG: card type set to ${card.type}`);
 
     card.queue = 'REVIEW';
-    console.log(`DEBUG: card queue set to ${card.queue}`);
   }
 
   /**
@@ -1122,7 +1128,6 @@ class Scheduler {
    */
   private updateRevIvl(card: Flashcard, ease: number): void {
     card.ivl = this.nextRevIvl(card, ease);
-    console.log(`DEBUG: ivl value set to ${card.ivl} days`);
   }
 
   // =====================================================================
@@ -1299,74 +1304,98 @@ class Scheduler {
     return `${value} ${value === 1 ? 'day' : 'days'}`;
   }
 
+  // For learning cards, card.due is an epoch timestamp. This calculates the delay in minutes.
+  private getDelayInMinutes(epochDue: number): number {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    return Math.round((epochDue - nowSeconds) / 60);
+  }
+
   getButtonValues(card: Flashcard): {
     easy: string;
     good: string;
     hard: string;
     again: string;
   } {
-    switch (card.type) {
+    const cardQueue = card.queue;
+    switch (cardQueue) {
       case 'NEW':
-        return {
-          easy: this.formatDays(4),
-          good: this.formatMinutes(10),
-          hard: this.formatMinutes(6),
-          again: this.formatMinutes(1),
-        };
+        this.fillDueDatesForNewCard(card);
+        return this.delaysForCurrentCard;
 
       case 'LEARNING': {
-        const firstLrnStep = this.lrnConf(card)[0];
-        const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
-
-        //NOTE: cards start at conf.length and the last step is '1'
-        if (card.left == 1) {
-          //since this is the last step left, the next step will be graduation
-          //there is no next step
-          const nextStep = currentStep;
-          const hardStepMinutes =
-            Math.floor((currentStep + Math.max(currentStep, nextStep)) / 2) / 60;
-
-          return {
-            easy: this.formatDays(4), //easy step is always 4
-            good: this.formatDays(Scheduler.GRADUATING_IVL), //since this is the last step
-            hard: this.formatMinutes(hardStepMinutes),
-            again: this.formatMinutes(firstLrnStep),
-          };
-        } else {
-          // card.left >= 2: there are more steps remaining
-          const nextStep = this.delayForGrade(this.lrnConf(card), card.left - 1);
-          const hardStepMinutes = Math.ceil(
-            (currentStep + Math.max(currentStep, nextStep)) / 2 / 60,
-          );
-
-          return {
-            easy: this.formatDays(4), //easy step is always 4
-            good: this.formatMinutes(nextStep / 60),
-            hard: this.formatMinutes(hardStepMinutes),
-            again: this.formatMinutes(firstLrnStep),
-          };
-        }
+        this.fillDueDatesForLearningCard(card);
+        return this.delaysForCurrentCard;
       }
 
-      case 'RELEARNING':
-        return {
-          easy: this.formatDays(2), //NOTE: a hardcoded value for easy step in relearing cards(hardcoded in rescheduleAsRev, read the NOTE there)
-          good: this.formatDays(card.ivl),
-          hard: this.formatMinutes(15), //NOTE: a hard-coded value for hard step in relearning cards(hard coded in delayForRepeatingGrade, read the NOTE in the method)
-          again: this.formatMinutes(this.lrnConf(card)[0]),
-        };
-
-      case 'REVIEW':
-        return {
-          easy: this.formatDays(this.nextRevIvl(card, 4)),
-          good: this.formatDays(this.nextRevIvl(card, 3)),
-          hard: this.formatDays(this.nextRevIvl(card, 2)),
-          again: this.formatMinutes(this.lrnConf(card)[0]),
-        };
+      case 'REVIEW': {
+        this.fillDueDatesForReviewCard(card);
+        return this.delaysForCurrentCard;
+      }
 
       default:
         throw new Error(`Unexpected card queue: ${card.queue}`);
     }
+  }
+
+  fillDueDatesForLearningCard(card: Flashcard) {
+    let copy = structuredClone(card);
+    this.answerLrnCard(copy, 4);
+    if (copy.type === 'REVIEW') this.delaysForCurrentCard.easy = this.formatDays(copy.due - this.today);
+
+    //delay for the GOOD button, card may be promoted to REVIEW
+    copy = structuredClone(card);
+    this.answerLrnCard(copy, 3);
+    if (copy.type === 'REVIEW') this.delaysForCurrentCard.good = this.formatDays(copy.due - this.today);
+    else this.delaysForCurrentCard.good = this.formatMinutes(this.getDelayInMinutes(copy.due));
+
+    //delay for HARD button, card remains on LEARNING/RELEARNING
+    copy = structuredClone(card);
+    this.answerLrnCard(copy, 2);
+    this.delaysForCurrentCard.hard = this.formatMinutes(this.getDelayInMinutes(copy.due));
+
+    //delay for AGAIN button, card remains on LEARNING/RELEARNING
+    copy = structuredClone(card);
+    this.answerLrnCard(copy, 1);
+    this.delaysForCurrentCard.again = this.formatMinutes(this.getDelayInMinutes(copy.due));
+  }
+
+  fillDueDatesForNewCard(card: Flashcard) {
+    let copy = structuredClone(card);
+    this.answerNewCard(copy, 4);
+    if (copy.type === 'REVIEW') this.delaysForCurrentCard.easy = this.formatDays(copy.due - this.today);
+
+    //delay for the GOOD button, card may be promoted to REVIEW
+    copy = structuredClone(card);
+    this.answerNewCard(copy, 3);
+    this.delaysForCurrentCard.good = this.formatMinutes(this.getDelayInMinutes(copy.due));
+
+    //delay for HARD button, card remains on LEARNING/RELEARNING
+    copy = structuredClone(card);
+    this.answerNewCard(copy, 2);
+    this.delaysForCurrentCard.hard = this.formatMinutes(this.getDelayInMinutes(copy.due));
+
+    //delay for AGAIN button, card remains on LEARNING/RELEARNING
+    copy = structuredClone(card);
+    this.answerNewCard(copy, 1);
+    this.delaysForCurrentCard.again = this.formatMinutes(this.getDelayInMinutes(copy.due));
+  }
+
+  fillDueDatesForReviewCard(card: Flashcard) {
+    let copy = structuredClone(card);
+    this.answerRevCard(copy, 4);
+    this.delaysForCurrentCard.easy = this.formatDays(copy.due - this.today);
+
+    copy = structuredClone(card);
+    this.answerRevCard(copy, 3);
+    this.delaysForCurrentCard.good = this.formatDays(copy.due - this.today);
+
+    copy = structuredClone(card);
+    this.answerRevCard(copy, 2);
+    this.delaysForCurrentCard.hard = this.formatDays(copy.due - this.today);
+
+    copy = structuredClone(card);
+    this.answerRevCard(copy, 1);
+    this.delaysForCurrentCard.again = this.formatMinutes(this.getDelayInMinutes(copy.due));
   }
 
   /**
